@@ -31,5 +31,17 @@ all:
         ansible_ssh_private_key_file: "{{ inventory_dir }}/configs/ssh/lab_key"
         ansible_become: true
         ansible_python_interpreter: /usr/bin/python3
+    routers:
+      children:
+        srl:
+        frr:
+    endpoints:
+      hosts:
+        client-1:
+          ansible_host: clab-ansible-workshop-client-1  # container name
+        client-2:
+          ansible_host: clab-ansible-workshop-client-2
+      vars:
+        ansible_connection: community.docker.docker  # docker exec, no SSH on the clients
   vars:
     ansible_host: 127.0.0.1
