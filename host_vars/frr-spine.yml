@@ -1,0 +1,10 @@
+# Source of truth for frr-spine. Both templates in playbooks/templates/ read this one structure.
+bgp:
+  asn: 65000
+  router_id: 10.0.0.2
+  service_loopback: 10.20.0.2/32     # new in Module 2
+  advertise:                         # prefixes already advertised by the lab
+    - 10.0.0.2/32
+  neighbors:
+    - { address: 10.1.0.2, asn: 65001, description: srl-01 }
+    - { address: 10.1.0.5, asn: 65002, description: frr-leaf }
