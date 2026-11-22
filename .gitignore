@@ -1,4 +1,5 @@
 .venv
 collections/
 author/
-configs/grafana/data
+configs/grafana/data/
+clab-ansible-workshop/
