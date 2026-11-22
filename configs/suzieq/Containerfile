@@ -5,10 +5,14 @@ FROM python:3.11-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends openssh-client iputils-ping gcc libc6-dev \
-    && pip install --no-cache-dir suzieq ipython \
+    && pip install --no-cache-dir suzieq==0.25.0 ipython \
     && apt-get purge -y --auto-remove gcc libc6-dev \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -s /bin/bash suzieq
+
+# SuzieQ cannot poll Nokia SR Linux. This adds support for it (see the files in srlinux/).
+COPY srlinux /tmp/srlinux
+RUN python /tmp/srlinux/patch_suzieq.py && rm -rf /tmp/srlinux
 
 # Works around psutil.cpu_freq() returning None on ARM VMs (crashes the poller at start-up).
 COPY sitecustomize.py /usr/local/lib/python3.11/site-packages/sitecustomize.py

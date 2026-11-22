@@ -2,8 +2,8 @@
 #
 #   ansible-playbook playbooks/validate_network.yml
 #
-# SuzieQ polls the two FRR routers every 15 seconds. It has no SR Linux support, so srl-01 is
-# seen from the other end of its session, on frr-spine.
+# SuzieQ polls all three routers every 15 seconds: the FRR routers and srl-01 (the image adds
+# SR Linux support, see configs/suzieq/srlinux/).
 
 - name: Validate the fabric with SuzieQ
   hosts: localhost
@@ -12,13 +12,26 @@
     suzieq_url: http://127.0.0.1:8000/api/v2
     suzieq_headers:
       access_token: 496157e6e869ef7f3d6ecb24a6f6d847b224ee4f   # lab API key, see configs/suzieq/suzieq-cfg.yml
-    # One session per neighbor entry on the FRR routers, taken from host_vars/
-    expected_sessions: "{{ groups['frr'] | map('extract', hostvars, ['bgp', 'neighbors']) | map('length') | sum }}"
-    # Service loopbacks that frr-leaf must have learned from the other routers
-    remote_loopbacks: >-
-      {{ groups['routers'] | difference(['frr-leaf'])
-         | map('extract', hostvars, ['bgp', 'service_loopback']) | list }}
+    # One session per neighbor entry on every router, taken from host_vars/
+    expected_sessions: "{{ groups['routers'] | map('extract', hostvars, ['bgp', 'neighbors']) | map('length') | sum }}"
+    service_prefixes: "{{ groups['routers'] | map('extract', hostvars, ['bgp', 'service_loopback']) | list }}"
   tasks:
+    - name: Ask SuzieQ which routers it polls
+      ansible.builtin.uri:
+        url: "{{ suzieq_url }}/device/show?view=latest"
+        headers: "{{ suzieq_headers }}"
+        return_content: true
+      register: sq_devices
+
+    - name: Every router is polled and alive
+      ansible.builtin.assert:
+        that: >-
+          sq_devices.json | selectattr('hostname', 'equalto', item)
+          | selectattr('status', 'equalto', 'alive') | list | length == 1
+        fail_msg: "SuzieQ is not polling {{ item }}"
+        success_msg: "SuzieQ polls {{ item }}"
+      loop: "{{ groups['routers'] }}"
+
     - name: Ask SuzieQ for every BGP session
       ansible.builtin.uri:
         url: "{{ suzieq_url }}/bgp/show?view=latest"
@@ -41,28 +54,24 @@
       loop_control:
         label: "{{ item.hostname }} -> {{ item.peer }}"
 
-    - name: Ask SuzieQ how frr-leaf reaches each remote service loopback
+    - name: Ask SuzieQ for every route learned through BGP
       ansible.builtin.uri:
-        url: "{{ suzieq_url }}/route/show?hostname=frr-leaf&prefix={{ item }}&view=latest"
+        url: "{{ suzieq_url }}/route/show?protocol=bgp&view=latest"
         headers: "{{ suzieq_headers }}"
         return_content: true
       register: sq_routes
-      loop: "{{ remote_loopbacks }}"
-      until: sq_routes.json | length > 0
-      retries: 6
-      delay: 5
-      failed_when: false
 
-    - name: Every remote loopback is learned through BGP
+    - name: Every router learned every other router's service loopback through BGP
+      vars:
+        learned: "{{ sq_routes.json | selectattr('hostname', 'equalto', item.0) | map(attribute='prefix') | list }}"
       ansible.builtin.assert:
-        that:
-          - item.json | length > 0
-          - item.json[0].protocol == 'bgp'
-        fail_msg: "frr-leaf has no BGP route to {{ item.item }}"
-        success_msg: "frr-leaf reaches {{ item.item }} through BGP via {{ item.json[0].nexthopIps | join(', ') }}"
-      loop: "{{ sq_routes.results }}"
+        that: item.1 in learned
+        fail_msg: "{{ item.0 }} has no BGP route to {{ item.1 }}"
+        success_msg: "{{ item.0 }} learned {{ item.1 }} through BGP"
+      loop: "{{ groups['routers'] | product(service_prefixes) | list }}"
       loop_control:
-        label: "{{ item.item }}"
+        label: "{{ item.0 }} <- {{ item.1 }}"
+      when: hostvars[item.0].bgp.service_loopback != item.1
 
     - name: Ask SuzieQ for its own BGP assertion
       ansible.builtin.uri:

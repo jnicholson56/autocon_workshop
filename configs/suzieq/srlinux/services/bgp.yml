@@ -1,0 +1,21 @@
+  srlinux:
+    version: all
+    command: info from state /network-instance default protocols bgp neighbor * | as json
+    normalize: 'neighbor/[
+      "peer-address: peer",
+      "peer-address: peerIP",
+      "session-state: _session",
+      "local-as/as-number: asn?|0",
+      "peer-as: peerAsn?|0",
+      "peer-router-id: peerRouterId?|",
+      "transport/local-address: updateSource?|",
+      "timers/negotiated-hold-time: holdTime?|0",
+      "timers/negotiated-keepalive-interval: keepaliveTime?|0",
+      "established-transitions: numChanges?|0",
+      "last-established: _established?|",
+      "last-event: _lastEvent?|",
+      "received-messages/total-updates: updatesRx?|0",
+      "sent-messages/total-updates: updatesTx?|0",
+      "route-reflector/client: _rr?|",
+      "afi-safi: _afisafi?|[]"
+      ]'

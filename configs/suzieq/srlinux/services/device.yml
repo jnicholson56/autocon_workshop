@@ -1,0 +1,14 @@
+  srlinux:
+    version: all
+    command:
+      - command: info from state /system information | as json
+        normalize: '[
+        "version: version",
+        "description: _description",
+        "last-booted: bootupTimestamp"
+        ]'
+      - command: info from state /platform chassis | as json
+        normalize: '[
+        "type: model",
+        "serial-number: serialNumber?|"
+        ]'

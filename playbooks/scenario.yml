@@ -9,9 +9,8 @@
 # -l:        required for every scenario except status. Picks the router to change.
 # bgp_peer, uplink and bgp_asn come from inventory.yml; override with -e bgp_peer=10.1.0.5.
 #
-# After the change, SuzieQ is asked to confirm it (bgp assert). SuzieQ only polls the two FRR
-# routers, but it sees every session on them, so a change on srl-01 shows up as a failed peer
-# on frr-spine.
+# After the change, SuzieQ is asked to confirm it (bgp assert). SuzieQ polls all three routers,
+# so it reports both ends of every session, including the one on srl-01.
 
 - name: Break or repair the network, then verify
   hosts: srl:frr

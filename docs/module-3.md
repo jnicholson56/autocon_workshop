@@ -20,44 +20,66 @@ Without SuzieQ:
   Ansible ---> SR Linux  (read YANG paths)                --+--> custom logic per platform
 
 With SuzieQ:
-  FRR ---> SuzieQ poller ---> database ---> one schema ---> Ansible (REST)
+  FRR      ---+
+  SR Linux ---+--> SuzieQ poller ---> database ---> one schema ---> Ansible (REST)
 ```
 
 SuzieQ polls the devices, converts what they return into common tables (BGP, routes, interfaces,
 and more), and serves them through one CLI and one REST API.
 
-!!! note "SuzieQ does not poll srl-01 in this lab"
-    SuzieQ polls `frr-spine` and `frr-leaf` over SSH and has no SR Linux support. The
-    `srl-01` session is still visible, because `frr-spine` reports its end of it. Module 2's
-    `verify_bgp.yml` is what checks `srl-01` directly.
+!!! note "SR Linux support is added by this lab"
+    SuzieQ has no built-in support for SR Linux. The lab's SuzieQ image adds it: the poller logs
+    in to `srl-01` over SSH, runs `info from state ... | as json` commands, and converts the answer
+    into the same tables the FRR routers fill. The code is in `configs/suzieq/srlinux/`. This is
+    what adding a new vendor to a normalized tool looks like. Once the data is in the common
+    schema, nothing downstream cares where it came from.
 
 ## 2. Explore with the SuzieQ CLI
 
 SuzieQ runs in the `suzieq` container. Run its CLI with `docker exec`:
 
 ```bash
-docker exec clab-ansible-workshop-suzieq suzieq-cli device show --columns='hostname vendor version status'
+docker exec clab-ansible-workshop-suzieq suzieq-cli device show --columns='hostname vendor os version status'
+```
+
+```text
+    hostname  vendor       os      version status
+0   frr-leaf  Alpine    linux  Linux v3.22  alive
+1  frr-spine  Alpine    linux  Linux v3.22  alive
+2     srl-01   Nokia  srlinux       26.7.2  alive
 ```
 
 ### BGP sessions
 
 ```bash
-docker exec clab-ansible-workshop-suzieq suzieq-cli bgp show --columns='hostname peer asn peerAsn state'
+docker exec clab-ansible-workshop-suzieq suzieq-cli bgp show --columns='hostname peer peerHostname asn peerAsn state'
 ```
 
 ```text
-    hostname      peer    asn  peerAsn        state
-0   frr-leaf  10.1.0.6  65002    65000  Established
-1  frr-spine  10.1.0.2  65000    65001  Established
-2  frr-spine  10.1.0.5  65000    65002  Established
+    hostname      peer peerHostname    asn  peerAsn        state
+0   frr-leaf  10.1.0.6    frr-spine  65002    65000  Established
+1  frr-spine  10.1.0.2       srl-01  65000    65001  Established
+2  frr-spine  10.1.0.5     frr-leaf  65000    65002  Established
+3     srl-01  10.1.0.1    frr-spine  65001    65000  Established
 ```
+
+Both ends of every session are there, and SuzieQ worked out which router is on the other end
+(`peerHostname`), including across vendors.
 
 ### Routes
 
-Which way does `frr-leaf` send traffic for the service loopback on `srl-01`?
+Which way does `frr-leaf` send traffic for the service loopback on `srl-01`? Then ask the same
+question from `srl-01`'s side. The command is identical for both vendors:
 
 ```bash
 docker exec clab-ansible-workshop-suzieq suzieq-cli route lpm --hostname=frr-leaf --address=10.20.0.1 --columns='hostname prefix nexthopIps protocol'
+docker exec clab-ansible-workshop-suzieq suzieq-cli route lpm --hostname=srl-01 --address=10.20.0.3 --columns='hostname prefix nexthopIps protocol'
+```
+
+### Interfaces
+
+```bash
+docker exec clab-ansible-workshop-suzieq suzieq-cli interface show --hostname=srl-01 --columns='ifname type state adminState ipAddressList'
 ```
 
 ### Built-in assertion
@@ -68,7 +90,8 @@ SuzieQ can check BGP for you: AS numbers, session state, and address-family agre
 docker exec clab-ansible-workshop-suzieq suzieq-cli bgp assert
 ```
 
-Every row should say `pass`.
+Every row should say `pass`. Because SuzieQ sees both ends of each session, a failure is reported
+from both sides.
 
 ## 3. The REST API
 
@@ -114,12 +137,14 @@ It targets `localhost` and calls SuzieQ. It never logs in to a router.
       loop: "{{ sq_bgp.json }}"
 ```
 
-The full playbook has three checks:
+The full playbook has these checks:
 
-1. SuzieQ knows the **expected number of sessions**, calculated from `host_vars/`, and each one is
+1. SuzieQ **polls every router** in the inventory and they are all alive.
+2. SuzieQ knows the **expected number of sessions**, calculated from `host_vars/`, and each one is
    `Established`.
-2. `frr-leaf` learned every other router's service loopback **through BGP**.
-3. SuzieQ's own `bgp/assert` passes on every session.
+3. **Every router** learned every other router's service loopback **through BGP**, `srl-01`
+   included.
+4. SuzieQ's own `bgp/assert` passes on every session.
 
 ## 5. Run it on a healthy network
 

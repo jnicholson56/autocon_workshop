@@ -129,7 +129,8 @@ Look at what happens:
 - **Prometheus:** open <http://localhost:9091/alerts>. After about 20 seconds `PortDown` and
   `BGPSessionDown` fire for `frr-spine`.
 - **SuzieQ:** the playbook ends by asking SuzieQ for the BGP assertion, and confirms the network
-  is broken, as expected.
+  is broken, as expected. SuzieQ polls `srl-01` too, so it reports the failed session from both
+  ends: `frr-spine` says `Interface down` and `srl-01` says `trackingDown`.
 
 !!! note "There is no second path"
     The lab is a single chain, so traffic cannot reroute. It stops until the port is back. In a
