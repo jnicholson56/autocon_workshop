@@ -9,14 +9,14 @@ theme:
   name: material
   palette:
     - scheme: slate
-      primary: teal
-      accent: cyan
+      primary: indigo
+      accent: indigo
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
     - scheme: default
-      primary: teal
-      accent: cyan
+      primary: indigo
+      accent: indigo
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
@@ -29,6 +29,9 @@ theme:
     - navigation.top
     - search.highlight
     - search.suggest
+
+extra_css:
+  - stylesheets/extra.css
 
 markdown_extensions:
   - admonition
