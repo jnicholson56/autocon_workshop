@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+rule_files:
+  - /etc/prometheus/rules.yml
+
+scrape_configs:
+  # SR Linux, via gnmic
+  - job_name: srl
+    honor_labels: true
+    static_configs:
+      - targets: ["172.20.20.33:9273"]
+
+  # FRR: interface counters (node_exporter) and BGP (frr_exporter)
+  - job_name: frr_interfaces
+    static_configs:
+      - targets: ["172.20.20.12:9100"]
+        labels: { router: frr-spine }
+      - targets: ["172.20.20.13:9100"]
+        labels: { router: frr-leaf }
+  - job_name: frr_bgp
+    static_configs:
+      - targets: ["172.20.20.12:9342"]
+        labels: { router: frr-spine }
+      - targets: ["172.20.20.13:9342"]
+        labels: { router: frr-leaf }

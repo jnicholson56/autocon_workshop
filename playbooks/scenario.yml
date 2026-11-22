@@ -1,0 +1,131 @@
+---
+# Break and repair the network, then watch it in Grafana (http://localhost:3000),
+# Prometheus alerts (http://localhost:9091/alerts) and SuzieQ (http://localhost:8501).
+# Idea borrowed from srl-labs/srl-telemetry-lab (BSD-3-Clause), rewritten as a playbook.
+#
+#   ansible-playbook playbooks/scenario.yml -e scenario=bgp-down -l frr-leaf
+#
+# scenario:  status (default) | bgp-down | bgp-up | port-down | port-up | reset
+# -l:        required for every scenario except status. Picks the router to change.
+# bgp_peer, uplink and bgp_asn come from inventory.yml; override with -e bgp_peer=10.1.0.5.
+#
+# After the change, SuzieQ is asked to confirm it (bgp assert). SuzieQ only polls the two FRR
+# routers, but it sees every session on them, so a change on srl-01 shows up as a failed peer
+# on frr-spine.
+
+- name: Break or repair the network, then verify
+  hosts: srl:frr
+  gather_facts: false
+  vars:
+    scenario: status
+    change_bgp: "{{ scenario in ['bgp-down', 'bgp-up', 'reset'] }}"
+    change_port: "{{ scenario in ['port-down', 'port-up', 'reset'] }}"
+    bring_up: "{{ scenario in ['bgp-up', 'port-up', 'reset'] }}"
+    expect_healthy: "{{ scenario in ['bgp-up', 'port-up', 'reset'] }}"
+    suzieq_url: http://127.0.0.1:8000/api/v2
+    suzieq_key: 496157e6e869ef7f3d6ecb24a6f6d847b224ee4f   # lab API key, see configs/suzieq/suzieq-cfg.yml
+  tasks:
+    - name: Check the scenario
+      ansible.builtin.assert:
+        that:
+          - scenario in ['status', 'bgp-down', 'bgp-up', 'port-down', 'port-up', 'reset']
+          - scenario == 'status' or ansible_limit is defined
+        fail_msg: "Unknown scenario, or no router picked. Use -e scenario=<name> and -l <router>, for example -l frr-leaf"
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    # ---- FRR ----
+    - name: "FRR BGP: {{ 'enable' if bring_up else 'shut down' }} the session to {{ bgp_peer }}"
+      ansible.builtin.command: >-
+        vtysh -c 'configure terminal'
+        -c 'router bgp {{ bgp_asn }}'
+        -c '{{ "no " if bring_up else "" }}neighbor {{ bgp_peer }} shutdown'
+      changed_when: true
+      when: "'frr' in group_names and change_bgp | bool"
+
+    - name: "FRR port: set {{ uplink }} {{ 'up' if bring_up else 'down' }}"
+      ansible.builtin.command: ip link set {{ uplink }} {{ 'up' if bring_up else 'down' }}
+      changed_when: true
+      when: "'frr' in group_names and change_port | bool"
+
+    - name: FRR BGP sessions and interfaces
+      ansible.builtin.shell: vtysh -c 'show bgp summary'; echo; ip -br link show | grep eth
+      register: frr_state
+      changed_when: false
+      when: "'frr' in group_names"
+
+    # ---- SR Linux ----
+    - name: "SR Linux BGP: {{ 'enable' if bring_up else 'disable' }} the session to {{ bgp_peer }}"
+      nokia.srlinux.config:
+        update:
+          - path: "/network-instance[name=default]/protocols/bgp/neighbor[peer-address={{ bgp_peer }}]"
+            value:
+              admin-state: "{{ 'enable' if bring_up else 'disable' }}"
+      when: "'srl' in group_names and change_bgp | bool"
+
+    - name: "SR Linux port: set {{ uplink }} {{ 'enable' if bring_up else 'disable' }}"
+      nokia.srlinux.config:
+        update:
+          - path: "/interface[name={{ uplink }}]"
+            value:
+              admin-state: "{{ 'enable' if bring_up else 'disable' }}"
+      when: "'srl' in group_names and change_port | bool"
+
+    - name: SR Linux BGP session and port state
+      nokia.srlinux.get:
+        paths:
+          - path: "/network-instance[name=default]/protocols/bgp/neighbor[peer-address=*]/session-state"
+            datastore: state
+          - path: "/interface[name=ethernet-1/1]/oper-state"
+            datastore: state
+          - path: "/interface[name=ethernet-1/2]/oper-state"
+            datastore: state
+      register: srl_state
+      when: "'srl' in group_names"
+
+    - name: Router state
+      ansible.builtin.debug:
+        msg: "{{ frr_state.stdout_lines if 'frr' in group_names else srl_state.result }}"
+
+    # ---- Verify with SuzieQ (runs once, from your machine) ----
+    - name: "Ask SuzieQ for the BGP assertion (it polls every 15s, so this may take a moment)"
+      ansible.builtin.uri:
+        url: "{{ suzieq_url }}/bgp/assert?format=json"
+        headers:
+          access_token: "{{ suzieq_key }}"
+        return_content: true
+      register: bgp_assert
+      until: >-
+        scenario == 'status' or
+        (((bgp_assert.json | default([])) | selectattr('result', 'equalto', 'fail') | list | length == 0)
+         == (expect_healthy | bool))
+      retries: 12
+      delay: 10
+      failed_when: false
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: SuzieQ view of the BGP sessions
+      ansible.builtin.debug:
+        msg: |
+          {% for r in bgp_assert.json | default([]) %}
+          {{ '%-10s' | format(r.hostname) }} -> {{ '%-9s' | format(r.peer) }} {{ '%-12s' | format(r.state) }} {{ r.result }}  {{ r.assertReason }}
+          {% endfor %}
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: SuzieQ agrees with the scenario
+      ansible.builtin.assert:
+        that: >-
+          bgp_assert.json is defined and
+          ((bgp_assert.json | selectattr('result', 'equalto', 'fail') | list | length == 0)
+           == (expect_healthy | bool))
+        success_msg: "SuzieQ shows the network {{ 'healthy' if expect_healthy | bool else 'broken, as expected' }}."
+        fail_msg: "SuzieQ does not (yet) show the expected state. Wait a poll cycle (15s) and run scenario=status."
+      when: scenario != 'status'
+      run_once: true
+      delegate_to: localhost
+      become: false

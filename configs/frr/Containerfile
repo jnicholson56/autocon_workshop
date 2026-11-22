@@ -1,0 +1,24 @@
+# FRR with Prometheus exporters (node_exporter :9100, frr_exporter :9342) and SSH for SuzieQ polling.
+# Build: podman build -t localhost/frr-mon:10.7.1 -f configs/frr/Containerfile configs/frr
+FROM quay.io/prometheus/node-exporter:v1.13.1 AS node-exporter
+
+FROM quay.io/frrouting/frr:10.7.1
+ARG TARGETARCH
+ARG FRR_EXPORTER_VERSION=1.12.0
+
+COPY --from=node-exporter /bin/node_exporter /usr/local/bin/node_exporter
+RUN wget -qO /tmp/fe.tgz "https://github.com/tynany/frr_exporter/releases/download/v${FRR_EXPORTER_VERSION}/frr_exporter-${FRR_EXPORTER_VERSION}.linux-${TARGETARCH}.tar.gz" \
+    && tar -xzf /tmp/fe.tgz -C /tmp \
+    && mv /tmp/frr_exporter-${FRR_EXPORTER_VERSION}.linux-${TARGETARCH}/frr_exporter /usr/local/bin/frr_exporter \
+    && rm -rf /tmp/fe.tgz /tmp/frr_exporter-*
+# SSH as admin (password `workshop`, or the lab key); sudo for vtysh; python3 so Ansible modules work.
+RUN apk add --no-cache openssh-server sudo python3 \
+    && adduser -D -s /bin/sh admin \
+    && echo "admin:workshop" | chpasswd \
+    && echo "admin ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/admin \
+    && mkdir -p /home/admin/.ssh && chown admin:admin /home/admin/.ssh && chmod 700 /home/admin/.ssh \
+    && printf 'PasswordAuthentication yes\nPermitRootLogin no\nStrictModes no\n' >> /etc/ssh/sshd_config
+
+COPY frr-mon-start.sh hostnamectl /usr/local/bin/
+
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/frr-mon-start.sh"]

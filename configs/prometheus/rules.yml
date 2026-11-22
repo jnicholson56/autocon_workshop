@@ -1,0 +1,53 @@
+# Alert rules for the workshop lab. Idea borrowed from srl-labs/srl-telemetry-lab (BSD-3-Clause).
+# View them at http://localhost:9091/alerts and in the Grafana dashboard.
+groups:
+  - name: workshop
+    interval: 10s
+    rules:
+      # frr_exporter: 2 = administratively down, 1 = established, 0 = down
+      - alert: BGPSessionDown
+        expr: >-
+          frr_bgp_peer_state != 1
+          or label_replace(srl_bgp_neighbor_session_established == 0, "peer", "$1", "neighbor_peer_address", "(.*)")
+        for: 20s
+        labels:
+          severity: critical
+        annotations:
+          summary: "BGP session {{ $labels.router }} to {{ $labels.peer }} is down"
+
+      - alert: BGPSessionFlapping
+        expr: >-
+          changes(frr_bgp_peer_state[5m]) > 2
+          or label_replace(changes(srl_bgp_neighbor_session_established[5m]) > 2, "peer", "$1", "neighbor_peer_address", "(.*)")
+        labels:
+          severity: warning
+        annotations:
+          summary: "BGP session {{ $labels.router }} to {{ $labels.peer }} changed state more than twice in 5 minutes"
+
+      - alert: PortDown
+        expr: >-
+          node_network_up == 0
+          or label_replace(srl_interface_oper_up == 0 and on(router, interface_name) srl_interface_in_octets, "device", "$1", "interface_name", "(.*)")
+        for: 20s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Interface {{ $labels.device }} on {{ $labels.router }} is down"
+
+      - alert: InterfaceErrors
+        expr: >-
+          (rate(node_network_receive_errs_total[2m]) + rate(node_network_transmit_errs_total[2m])) > 0
+          or label_replace((rate(srl_interface_in_error_packets[2m]) + rate(srl_interface_out_error_packets[2m])) > 0, "device", "$1", "interface_name", "(.*)")
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Interface {{ $labels.device }} on {{ $labels.router }} is seeing errors"
+
+      - alert: TelemetryTargetDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus cannot scrape {{ $labels.job }} at {{ $labels.instance }}"

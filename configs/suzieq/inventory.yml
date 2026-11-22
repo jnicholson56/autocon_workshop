@@ -1,0 +1,22 @@
+# SuzieQ polls the FRR routers over SSH (admin/workshop, set in configs/frr/Containerfile).
+# SuzieQ has no SR Linux support, so srl-01 is not listed.
+sources:
+  - name: workshop
+    hosts:
+      - url: ssh://172.20.20.12
+      - url: ssh://172.20.20.13
+
+devices:
+  - name: workshop-devices
+    ignore-known-hosts: true
+
+auths:
+  - name: workshop-auth
+    username: admin
+    password: plain:workshop
+
+namespaces:
+  - name: workshop
+    source: workshop
+    device: workshop-devices
+    auth: workshop-auth

@@ -1,0 +1,70 @@
+# Streams SR Linux telemetry (gNMI) and exposes it to Prometheus on :9273.
+username: admin
+password: NokiaSrl1!
+skip-verify: true
+encoding: json_ietf
+
+targets:
+  srl-01:
+    address: 172.20.20.11:57400
+    event-tags:
+      router: srl-01
+
+subscriptions:
+  interface:
+    paths:
+      - /interface[name=ethernet-*]/statistics
+      - /interface[name=ethernet-*]/oper-state
+    stream-mode: sample
+    sample-interval: 10s
+  bgp_neighbor:
+    paths:
+      - /network-instance[name=default]/protocols/bgp/neighbor[peer-address=*]/session-state
+      - /network-instance[name=default]/protocols/bgp/neighbor[peer-address=*]/established-transitions
+      - /network-instance[name=default]/protocols/bgp/neighbor[peer-address=*]/peer-as
+    stream-mode: sample
+    sample-interval: 10s
+  bgp_afi:
+    paths:
+      - /network-instance[name=default]/protocols/bgp/neighbor[peer-address=*]/afi-safi[afi-safi-name=ipv4-unicast]/received-routes
+      - /network-instance[name=default]/protocols/bgp/neighbor[peer-address=*]/afi-safi[afi-safi-name=ipv4-unicast]/sent-routes
+      - /network-instance[name=default]/protocols/bgp/neighbor[peer-address=*]/afi-safi[afi-safi-name=ipv4-unicast]/active-routes
+    stream-mode: sample
+    sample-interval: 10s
+
+processors:
+  # Keep only the leaf name: /srl_nokia-.../in-octets -> in-octets
+  leaf-name:
+    event-strings:
+      value-names: [".*"]
+      transforms:
+        - path-base:
+            apply-on: name
+  # gNMI sends uint64 counters as strings
+  counters-to-int:
+    event-convert:
+      value-names: ["^in-.*", "^out-.*", "carrier-transitions", "established-transitions"]
+      type: int
+  # Prometheus stores numbers only, so map states to 1/0
+  states-to-number:
+    event-jq:
+      expression: >-
+        map(
+          if .values["session-state"] != null then
+            .values["session_established"] = (if .values["session-state"] == "established" then 1 else 0 end)
+          elif .values["oper-state"] != null then
+            .values["oper_up"] = (if .values["oper-state"] == "up" then 1 else 0 end)
+          else . end)
+
+outputs:
+  prometheus:
+    type: prometheus
+    listen: :9273
+    path: /metrics
+    metric-prefix: srl
+    append-subscription-name: true
+    expiration: 60s
+    event-processors:
+      - leaf-name
+      - counters-to-int
+      - states-to-number

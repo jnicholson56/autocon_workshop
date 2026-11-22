@@ -1,0 +1,22 @@
+# Native build of SuzieQ (the upstream netenglabs/suzieq image is amd64-only,
+# which segfaults under emulation on Apple Silicon).
+# Build: podman build -t localhost/suzieq:local -f configs/suzieq/Containerfile configs/suzieq
+FROM python:3.11-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssh-client iputils-ping gcc libc6-dev \
+    && pip install --no-cache-dir suzieq ipython \
+    && apt-get purge -y --auto-remove gcc libc6-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -s /bin/bash suzieq
+
+# Works around psutil.cpu_freq() returning None on ARM VMs (crashes the poller at start-up).
+COPY sitecustomize.py /usr/local/lib/python3.11/site-packages/sitecustomize.py
+
+USER suzieq
+WORKDIR /home/suzieq
+RUN mkdir -p parquet .suzieq
+COPY --chown=suzieq:suzieq suzieq-cfg.yml /home/suzieq/.suzieq/suzieq-cfg.yml
+
+EXPOSE 8501 8000
+ENTRYPOINT ["/bin/bash"]

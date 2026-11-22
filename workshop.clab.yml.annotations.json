@@ -1,0 +1,79 @@
+{
+  "freeTextAnnotations": [],
+  "freeShapeAnnotations": [],
+  "trafficRateAnnotations": [],
+  "scriptButtonAnnotations": [],
+  "groupStyleAnnotations": [],
+  "networkNodeAnnotations": [],
+  "nodeAnnotations": [
+    {
+      "id": "srl-01",
+      "interfacePattern": "e1-{n}",
+      "position": {
+        "x": 740,
+        "y": 660
+      }
+    },
+    {
+      "id": "frr-spine",
+      "position": {
+        "x": 880,
+        "y": 660
+      }
+    },
+    {
+      "id": "frr-leaf",
+      "position": {
+        "x": 1040,
+        "y": 660
+      }
+    },
+    {
+      "id": "client-1",
+      "position": {
+        "x": 580,
+        "y": 660
+      }
+    },
+    {
+      "id": "client-2",
+      "position": {
+        "x": 1200,
+        "y": 660
+      }
+    },
+    {
+      "id": "suzieq",
+      "position": {
+        "x": 1200,
+        "y": 520
+      }
+    },
+    {
+      "id": "grafana",
+      "position": {
+        "x": 1040,
+        "y": 520
+      }
+    },
+    {
+      "id": "prometheus",
+      "position": {
+        "x": 1040,
+        "y": 420
+      }
+    },
+    {
+      "id": "gnmic",
+      "position": {
+        "x": 1200,
+        "y": 420
+      }
+    }
+  ],
+  "edgeAnnotations": [],
+  "aliasEndpointAnnotations": [],
+  "viewerSettings": {
+    "nodeStyle": "boxed"
+  }
+}

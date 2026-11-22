@@ -1,0 +1,7 @@
+#!/bin/sh
+# Minimal stand-in for systemd's hostnamectl; SuzieQ's Linux profile parses this output.
+. /etc/os-release
+echo "   Static hostname: $(hostname)"
+echo "           Chassis: container"
+echo "  Operating System: ${PRETTY_NAME}"
+echo "      Architecture: $(uname -m)"
