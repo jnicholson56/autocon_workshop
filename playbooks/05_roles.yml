@@ -1,0 +1,11 @@
+# Module 3: Roles Exercise (refactored)
+#
+# Run this after refactoring 05_roles_flat.yml into the web_server role.
+# See module-3.md for instructions.
+
+- name: Configure web servers using a role
+  hosts: servers
+  gather_facts: true
+
+  roles:
+    - web_server

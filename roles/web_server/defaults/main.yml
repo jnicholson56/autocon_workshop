@@ -1,0 +1,5 @@
+# Default variables for the web_server role
+# These can be overridden in inventory, host_vars, or playbook vars.
+
+document_root: /var/www/html
+web_port: 80

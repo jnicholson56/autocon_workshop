@@ -1,0 +1,24 @@
+# Module 1: First Playbook Exercise
+#
+# Run this after reading module-1.md to practice writing and running your first playbook.
+
+- name: My first Ansible playbook
+  hosts: servers
+  gather_facts: false
+
+  tasks:
+    - name: Print a greeting
+      ansible.builtin.debug:
+        msg: "Hello from Ansible!"
+
+    - name: Create a workshop directory
+      ansible.builtin.file:
+        path: /tmp/workshop
+        state: directory
+        mode: "0755"
+
+    - name: Create a hello file
+      ansible.builtin.copy:
+        content: "This file was created by Ansible\n"
+        dest: /tmp/workshop/hello.txt
+        mode: "0644"

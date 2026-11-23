@@ -1,0 +1,25 @@
+# Web server role - tasks
+# This role installs and configures nginx on target hosts.
+
+- name: Create document root
+  ansible.builtin.file:
+    path: "{{ document_root }}"
+    state: directory
+    mode: "0755"
+
+- name: Deploy index page
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ document_root }}/index.html"
+    mode: "0644"
+
+- name: Ensure nginx is installed
+  ansible.builtin.package:
+    name: nginx
+    state: present
+
+- name: Ensure nginx is running
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true

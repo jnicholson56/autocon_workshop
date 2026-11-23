@@ -1,0 +1,15 @@
+  srlinux:
+    version: all
+    command: info from state /interface * | as json
+    normalize: 'interface/[
+      "name: ifname",
+      "ifindex: ifindex?|0",
+      "description: description?|",
+      "admin-state: _admin",
+      "oper-state: _oper",
+      "mtu: mtu?|0",
+      "ethernet/hw-mac-address: macaddr?|",
+      "ethernet/port-speed: _speed?|",
+      "last-change: _lastChange?|",
+      "subinterface: _subifs?|[]"
+      ]'

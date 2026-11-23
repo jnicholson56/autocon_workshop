@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ page_title | default('Ansible Workshop') }}</title>
+</head>
+<body>
+    <h1>Hello from {{ ansible_hostname }}</h1>
+    <p>This page was deployed by Ansible</p>
+    <p>OS: {{ ansible_distribution }} {{ ansible_distribution_version }}</p>
+    <p>IP Address: {{ ansible_default_ipv4.address | default('N/A') }}</p>
+    <hr>
+    <p><em>Managed with ❤️ by Ansible</em></p>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Beginner Ansible Workshop Inventory
+# Nodes are reached via the Containerlab management network (172.20.20.0/24).
+#
+#   ansible-inventory --list    # verify connectivity
+#   ansible all -m ping         # test SSH to all nodes
+#
+
+all:
+  children:
+    srl:
+      hosts:
+        r1:
+          ansible_host: 172.20.20.11
+        r2:
+          ansible_host: 172.20.20.12
+      vars:
+        ansible_user: admin
+        ansible_ssh_private_key_file: "{{ inventory_dir }}/ssh/lab_key"
+    servers:
+      hosts:
+        server1:
+          ansible_host: 172.20.20.13
+      vars:
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: "{{ inventory_dir }}/ssh/lab_key"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

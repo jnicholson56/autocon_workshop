@@ -1,0 +1,32 @@
+# Module 4: Error Handling Exercise
+#
+# Run this after reading module-4.md to practice error handling.
+
+- name: Error handling demonstration
+  hosts: servers
+  gather_facts: false
+
+  tasks:
+    - name: Attempt to create a file in a protected location
+      block:
+        - name: Try to write to /root (will fail without privileges)
+          ansible.builtin.copy:
+            content: "secret\n"
+            dest: /root/protected.txt
+            mode: "0600"
+
+      rescue:
+        - name: Write to a safe location instead
+          ansible.builtin.copy:
+            content: "This went to /tmp instead\n"
+            dest: /tmp/fallback.txt
+            mode: "0644"
+
+        - name: Report the fallback
+          ansible.builtin.debug:
+            msg: "Failed to write to /root, wrote to /tmp/fallback.txt instead"
+
+      always:
+        - name: Always run this task
+          ansible.builtin.debug:
+            msg: "Error handling exercise completed"

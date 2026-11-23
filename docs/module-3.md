@@ -1,13 +1,13 @@
 # Module 3: Templates & Roles
-#
-# **Time:** 45 minutes
-#
-# ## Objectives
-#
-# - Write Jinja2 templates for dynamic configuration
-# - Use filters to transform data
-# - Organize playbooks into roles
-# - Understand when to use a role vs. a flat playbook
+
+**Time:** 45 minutes
+
+## Objectives
+
+- Write Jinja2 templates for dynamic configuration
+- Use filters to transform data
+- Organize playbooks into roles
+- Understand when to use a role vs. a flat playbook
 
 ## 1. Templates with Jinja2
 

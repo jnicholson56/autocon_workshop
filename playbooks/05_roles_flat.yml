@@ -1,0 +1,36 @@
+# Module 3: Roles Exercise (flat starting point)
+#
+# This is the flat playbook you will refactor into a role.
+# See module-3.md for instructions.
+
+- name: Configure web server (flat)
+  hosts: servers
+  gather_facts: false
+
+  vars:
+    web_port: 80
+    document_root: /var/www/html
+
+  tasks:
+    - name: Create document root
+      ansible.builtin.file:
+        path: "{{ document_root }}"
+        state: directory
+        mode: "0755"
+
+    - name: Deploy index page
+      ansible.builtin.template:
+        src: index.html.j2
+        dest: "{{ document_root }}/index.html"
+        mode: "0644"
+
+    - name: Ensure nginx is installed
+      ansible.builtin.package:
+        name: nginx
+        state: present
+
+    - name: Ensure nginx is running
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true

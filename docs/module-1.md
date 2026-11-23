@@ -1,13 +1,13 @@
 # Module 1: Foundations & Inventory
-#
-# **Time:** 60 minutes
-#
-# ## Objectives
-#
-# - Understand what Ansible is and why it matters
-# - Write and run your first playbook
-# - Read and modify the inventory
-# - Run ad-hoc commands to query state without writing a playbook
+
+**Time:** 60 minutes
+
+## Objectives
+
+- Understand what Ansible is and why it matters
+- Write and run your first playbook
+- Read and modify the inventory
+- Run ad-hoc commands to query state without writing a playbook
 
 ## 1. What is Ansible?
 

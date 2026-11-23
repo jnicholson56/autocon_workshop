@@ -1,0 +1,29 @@
+  srlinux:
+    version: all
+    merge: False
+    command:
+      - command: info from state /network-instance default route-table ipv4-unicast | as json
+        normalize: 'route/[
+        "ipv4-prefix: prefix",
+        "route-type: _type",
+        "preference: preference?|0",
+        "metric: metric?|0",
+        "active: _active?|",
+        "next-hop-group: _nhg?|",
+        "last-app-update: _updated?|",
+        "_entryType: _entryType?|route"
+        ]'
+      - command: info from state /network-instance default route-table next-hop-group * | as json
+        normalize: 'next-hop-group/[
+        "index: _index",
+        "next-hop/[*]/next-hop: _nhs?|[]",
+        "_entryType: _entryType?|nhg"
+        ]'
+      - command: info from state /network-instance default route-table next-hop * | as json
+        normalize: 'next-hop/[
+        "index: _index",
+        "type: _nhtype?|",
+        "ip-address: _ip?|",
+        "subinterface: _oif?|",
+        "_entryType: _entryType?|nh"
+        ]'

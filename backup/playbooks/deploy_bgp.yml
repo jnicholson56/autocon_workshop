@@ -1,0 +1,32 @@
+# Push the BGP design in host_vars/ to every router, using one template per platform.
+#
+#   ansible-playbook playbooks/deploy_bgp.yml
+#   ansible-playbook playbooks/deploy_bgp.yml --check --diff -l frr    # preview the FRR change
+#
+# The changes only live in the running configuration. Redeploy the lab to start clean.
+
+- name: Configure the FRR routers (text template)
+  hosts: frr
+  gather_facts: false
+  tasks:
+    - name: Render the vtysh configuration on the router
+      ansible.builtin.template:
+        src: frr_bgp.j2
+        dest: /tmp/workshop-bgp.conf
+        mode: "0644"
+      notify: Apply the FRR configuration
+
+  handlers:
+    - name: Apply the FRR configuration
+      ansible.builtin.command: vtysh -f /tmp/workshop-bgp.conf
+      changed_when: true
+
+- name: Configure SR Linux (structured JSON)
+  hosts: srl
+  gather_facts: false
+  tasks:
+    - name: Apply the rendered JSON to the candidate datastore and commit
+      nokia.srlinux.config:
+        update:
+          - path: "/"
+            value: "{{ lookup('ansible.builtin.template', 'srl_bgp.json.j2') }}"

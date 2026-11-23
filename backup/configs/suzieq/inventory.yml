@@ -1,0 +1,25 @@
+# SuzieQ polls the FRR routers over SSH (admin/workshop, set in configs/frr/Containerfile) and
+# srl-01 over SSH too (admin/NokiaSrl1!). SuzieQ has no SR Linux support of its own: the image
+# adds it, see configs/suzieq/srlinux/. A password given on the host line is used as it is, so it
+# has no "plain:" prefix.
+sources:
+  - name: workshop
+    hosts:
+      - url: ssh://172.20.20.12
+      - url: ssh://172.20.20.13
+      - url: "ssh://admin@172.20.20.11 password=NokiaSrl1!"
+
+devices:
+  - name: workshop-devices
+    ignore-known-hosts: true
+
+auths:
+  - name: workshop-auth
+    username: admin
+    password: plain:workshop
+
+namespaces:
+  - name: workshop
+    source: workshop
+    device: workshop-devices
+    auth: workshop-auth

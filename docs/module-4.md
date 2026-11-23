@@ -1,13 +1,13 @@
 # Module 4: Handlers, Tags & Error Handling
-#
-# **Time:** 75 minutes (includes the lab exercise)
-#
-# ## Objectives
 
-# - Use handlers to trigger actions on change
-# - Apply tags for selective playbook execution
-# - Handle errors gracefully with block/rescue/always
-# - Complete the lab: deploy a web stack
+**Time:** 75 minutes (includes the lab exercise)
+
+## Objectives
+
+- Use handlers to trigger actions on change
+- Apply tags for selective playbook execution
+- Handle errors gracefully with block/rescue/always
+- Complete the lab: deploy a web stack
 
 ## 1. Handlers
 

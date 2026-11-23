@@ -1,0 +1,53 @@
+{# SR Linux takes structured data that follows its YANG model, so this template produces JSON. #}
+{
+  "interface": [
+    {
+      "name": "lo0",
+      "admin-state": "enable",
+      "subinterface": [
+        {
+          "index": 0,
+          "admin-state": "enable",
+          "ipv4": {
+            "admin-state": "enable",
+            "address": [ { "ip-prefix": "{{ bgp.service_loopback }}" } ]
+          }
+        }
+      ]
+    }
+  ],
+  "network-instance": [
+    {
+      "name": "default",
+      "interface": [ { "name": "lo0.0" } ],
+      "protocols": {
+        "bgp": {
+          "autonomous-system": {{ bgp.asn }},
+          "router-id": "{{ bgp.router_id }}",
+          "neighbor": [
+{% for n in bgp.neighbors %}
+            {
+              "peer-address": "{{ n.address }}",
+              "peer-as": {{ n.asn }},
+              "peer-group": "ebgp",
+              "description": "{{ n.description }}"
+            }{{ "," if not loop.last }}
+{% endfor %}
+          ]
+        }
+      }
+    }
+  ],
+  "routing-policy": {
+    "prefix-set": [
+      {
+        "name": "default_bgp_advertise",
+        "prefix": [
+{% for prefix in bgp.advertise + [bgp.service_loopback] %}
+          { "ip-prefix": "{{ prefix }}", "mask-length-range": "exact" }{{ "," if not loop.last }}
+{% endfor %}
+        ]
+      }
+    ]
+  }
+}

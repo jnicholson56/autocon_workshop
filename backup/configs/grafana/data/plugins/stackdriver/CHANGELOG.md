@@ -1,0 +1,57 @@
+# Changelog
+
+## 12.6.7
+
+- Security: Restrict resource calls to the expected Cloud Monitoring API paths ([#143](https://github.com/grafana/grafana-cloudmonitoring-datasource/pull/143))
+
+## 12.6.6
+
+- Update dependencies
+- Fix a connection freeze between Grafana and the plugin under heavy query load by updating google.golang.org/grpc to v1.85.0 ([grpc/grpc-go#9330](https://github.com/grpc/grpc-go/issues/9330))
+- Update frontend and backend dependencies ([#139](https://github.com/grafana/grafana-cloudmonitoring-datasource/pull/139))
+
+## 12.6.5
+
+- Bump backend dependency
+
+## 12.6.4
+
+- Update Go to 1.27.3 ([#125](https://github.com/grafana/grafana-cloudmonitoring-datasource/pull/125))
+- Fix security vulnerabilities ([#124](https://github.com/grafana/grafana-cloudmonitoring-datasource/pull/124))
+
+## 12.6.3
+
+- Adds datasource configuration schema ([#122](https://github.com/grafana/grafana-cloudmonitoring-datasource/pull/122))
+
+## 12.6.2
+
+- Bump go v1.26.7 and grafana-plugin-sdk-go v0.296.4 ([#109](https://github.com/grafana/grafana-cloudmonitoring-datasource/pull/109))
+- Update contribution document ([#98](https://github.com/grafana/grafana-cloudmonitoring-datasource/pull/98))
+
+## 12.6.1
+
+- Removed included dashboards from plugin.json.
+
+## 12.6.0
+
+- Add support for [Google Cloud Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation) as a new authentication type. Available on Grafana Cloud only.
+
+## 12.5.2
+
+- Classified invalid query JSON as downstream errors.
+
+## 12.5.1
+
+- Added included dashboards back to plugin.json.
+
+## 12.5.0
+
+- Add support for [Forward OAuth Identity](https://grafana.com/docs/grafana/latest/datasources/google-cloud-monitoring/google-authentication/) as a new authentication type. Each query runs as the Google-signed-in Grafana user by forwarding their OAuth token. Requires Grafana to be configured with [Google OAuth](https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-authentication/google/) login.
+
+## 12.4.3
+
+- Removed includes from plugin.json so dashboards don't get imported automatically.
+
+## 12.4.2
+
+- Initial release.

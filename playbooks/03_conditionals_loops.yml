@@ -1,0 +1,25 @@
+# Module 2: Loops & Conditionals Exercise
+#
+# Run this after reading module-2.md to practice loops and conditionals.
+
+- name: Conditional package installation
+  hosts: servers
+  gather_facts: true
+
+  vars:
+    packages_to_check:
+      - curl
+      - wget
+      - vim
+
+  tasks:
+    - name: Install packages that are not present
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages_to_check }}"
+
+    - name: Show which packages were installed
+      ansible.builtin.debug:
+        msg: "Package {{ item }} was processed"
+      loop: "{{ packages_to_check }}"

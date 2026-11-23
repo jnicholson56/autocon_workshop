@@ -1,13 +1,13 @@
 # Module 2: Variables, Facts & Loops
-#
-# **Time:** 45 minutes
-#
-# ## Objectives
-#
-# - Understand variable precedence and how to use facts
-# - Use `set_fact` for runtime computation
-# - Write loops with the modern `loop:` syntax
-# - Apply conditionals with `when:`
+
+**Time:** 45 minutes
+
+## Objectives
+
+- Understand variable precedence and how to use facts
+- Use `set_fact` for runtime computation
+- Write loops with the modern `loop:` syntax
+- Apply conditionals with `when:`
 
 ## 1. Variables & Facts
 

@@ -1,0 +1,10 @@
+# Source of truth for srl-01. Both templates in playbooks/templates/ read this one structure.
+bgp:
+  asn: 65001
+  router_id: 10.0.0.1
+  service_loopback: 10.20.0.1/32     # new in Module 2
+  advertise:                         # prefixes already advertised by the lab
+    - 10.0.0.1/32
+    - 172.16.0.0/24
+  neighbors:
+    - { address: 10.1.0.1, asn: 65000, description: frr-spine }

@@ -1,0 +1,28 @@
+# Module 2: Variables & Facts Exercise
+#
+# Run this after reading module-2.md to practice using variables and facts.
+
+- name: Show system facts
+  hosts: servers
+  gather_facts: true
+
+  tasks:
+    - name: Display the OS family
+      ansible.builtin.debug:
+        msg: "This host runs on {{ ansible_os_family }}"
+
+    - name: Display the hostname
+      ansible.builtin.debug:
+        msg: "Hostname is {{ ansible_hostname }}"
+
+    - name: Display total memory
+      ansible.builtin.debug:
+        msg: "Total memory: {{ ansible_memtotal_mb }} MB"
+
+    - name: Set a computed fact
+      ansible.builtin.set_fact:
+        is_ubuntu: "{{ 'Ubuntu' in ansible_distribution }}"
+
+    - name: Show the computed fact
+      ansible.builtin.debug:
+        var: is_ubuntu

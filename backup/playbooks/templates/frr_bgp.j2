@@ -1,0 +1,21 @@
+{# FRR reads plain CLI text, so this template produces vtysh commands. #}
+interface lo
+ ip address {{ bgp.service_loopback }}
+exit
+!
+router bgp {{ bgp.asn }}
+ bgp router-id {{ bgp.router_id }}
+{% for n in bgp.neighbors %}
+ neighbor {{ n.address }} remote-as {{ n.asn }}
+ neighbor {{ n.address }} description {{ n.description }}
+{% endfor %}
+ !
+ address-family ipv4 unicast
+{% for prefix in bgp.advertise + [bgp.service_loopback] %}
+  network {{ prefix }}
+{% endfor %}
+{% for n in bgp.neighbors %}
+  neighbor {{ n.address }} activate
+{% endfor %}
+ exit-address-family
+exit
