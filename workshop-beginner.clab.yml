@@ -7,16 +7,16 @@ mgmt:
 topology:
   nodes:
     r1:
-      kind: nokia_srl
-      image: ghcr.io/nokia/srl
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux
 
     r2:
-      kind: nokia_srl
-      image: ghcr.io/nokia/srl
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux
 
     server1:
       kind: linux
-      image: ghcr.io/hellt/ubuntu-netlab
+      image: python:3.13-alpine
 
   links:
     - endpoints: ["r1:e1-1", "r2:e1-1"]

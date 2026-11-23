@@ -1,0 +1,174 @@
+{
+  "name": "ansible-workshop-beginner",
+  "type": "clab",
+  "clab": {
+    "config": {
+      "prefix": "clab",
+      "mgmt": {
+        "network": "clab-mgmt",
+        "bridge": "podman2",
+        "ipv4-subnet": "172.20.20.0/24",
+        "ipv4-gw": "172.20.20.1",
+        "external-access": true,
+        "ipam": {
+          "provider": "containerlab"
+        }
+      }
+    }
+  },
+  "ssh-pub-keys": [],
+  "nodes": {
+    "r1": {
+      "index": "0",
+      "shortname": "r1",
+      "longname": "clab-ansible-workshop-beginner-r1",
+      "fqdn": "r1.ansible-workshop-beginner.io",
+      "group": "",
+      "labdir": "/Users/joseph/projects/workshops/autocon_workshop/clab-ansible-workshop-beginner/r1",
+      "kind": "nokia_srlinux",
+      "image": "ghcr.io/nokia/srlinux",
+      "mgmt-net": "clab-mgmt",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.2",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "",
+      "mgmt-ipv6-prefix-length": 0,
+      "mac-address": "1a:00:00:00:00:00",
+      "labels": {
+        "clab-git-branch": "main",
+        "clab-git-hash": "e7ae4d4",
+        "clab-mgmt-net-bridge": "podman2",
+        "clab-net-mgmt": "clab-mgmt",
+        "clab-node-group": "",
+        "clab-node-kind": "nokia_srlinux",
+        "clab-node-lab-dir": "/Users/joseph/projects/workshops/autocon_workshop/clab-ansible-workshop-beginner/r1",
+        "clab-node-longname": "clab-ansible-workshop-beginner-r1",
+        "clab-node-name": "r1",
+        "clab-node-type": "ixr-d2l",
+        "clab-owner": "",
+        "clab-topo-file": "/Users/joseph/projects/workshops/autocon_workshop/workshop-beginner.clab.yml",
+        "containerlab": "ansible-workshop-beginner"
+      },
+      "port-bindings": [
+      ]
+    },
+    "r2": {
+      "index": "1",
+      "shortname": "r2",
+      "longname": "clab-ansible-workshop-beginner-r2",
+      "fqdn": "r2.ansible-workshop-beginner.io",
+      "group": "",
+      "labdir": "/Users/joseph/projects/workshops/autocon_workshop/clab-ansible-workshop-beginner/r2",
+      "kind": "nokia_srlinux",
+      "image": "ghcr.io/nokia/srlinux",
+      "mgmt-net": "clab-mgmt",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.3",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "",
+      "mgmt-ipv6-prefix-length": 0,
+      "mac-address": "1a:cb:01:00:00:00",
+      "labels": {
+        "clab-git-branch": "main",
+        "clab-git-hash": "e7ae4d4",
+        "clab-mgmt-net-bridge": "podman2",
+        "clab-net-mgmt": "clab-mgmt",
+        "clab-node-group": "",
+        "clab-node-kind": "nokia_srlinux",
+        "clab-node-lab-dir": "/Users/joseph/projects/workshops/autocon_workshop/clab-ansible-workshop-beginner/r2",
+        "clab-node-longname": "clab-ansible-workshop-beginner-r2",
+        "clab-node-name": "r2",
+        "clab-node-type": "ixr-d2l",
+        "clab-owner": "",
+        "clab-topo-file": "/Users/joseph/projects/workshops/autocon_workshop/workshop-beginner.clab.yml",
+        "containerlab": "ansible-workshop-beginner"
+      },
+      "port-bindings": [
+      ]
+    },
+    "server1": {
+      "index": "2",
+      "shortname": "server1",
+      "longname": "clab-ansible-workshop-beginner-server1",
+      "fqdn": "server1.ansible-workshop-beginner.io",
+      "group": "",
+      "labdir": "/Users/joseph/projects/workshops/autocon_workshop/clab-ansible-workshop-beginner/server1",
+      "kind": "linux",
+      "image": "python:3.13-alpine",
+      "mgmt-net": "clab-mgmt",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.4",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "",
+      "mgmt-ipv6-prefix-length": 0,
+      "mac-address": "",
+      "labels": {
+        "clab-git-branch": "main",
+        "clab-git-hash": "e7ae4d4",
+        "clab-mgmt-net-bridge": "podman2",
+        "clab-net-mgmt": "clab-mgmt",
+        "clab-node-group": "",
+        "clab-node-kind": "linux",
+        "clab-node-lab-dir": "/Users/joseph/projects/workshops/autocon_workshop/clab-ansible-workshop-beginner/server1",
+        "clab-node-longname": "clab-ansible-workshop-beginner-server1",
+        "clab-node-name": "server1",
+        "clab-node-type": "",
+        "clab-owner": "",
+        "clab-topo-file": "/Users/joseph/projects/workshops/autocon_workshop/workshop-beginner.clab.yml",
+        "containerlab": "ansible-workshop-beginner"
+      },
+      "port-bindings": [
+      ]
+    }
+  },
+  "links": [
+    {
+      "endpoints": {
+        "a": {
+          "node": "r1",
+          "interface": "e1-1",
+          "mac": "aa:c1:ab:56:f1:0d",
+          "peer": "z"
+        },
+        "z": {
+          "node": "r2",
+          "interface": "e1-1",
+          "mac": "aa:c1:ab:84:d9:17",
+          "peer": "a"
+        }
+      }
+    },
+    {
+      "endpoints": {
+        "a": {
+          "node": "r1",
+          "interface": "e1-2",
+          "mac": "aa:c1:ab:a2:72:f2",
+          "peer": "z"
+        },
+        "z": {
+          "node": "server1",
+          "interface": "eth1",
+          "mac": "aa:c1:ab:7b:98:2b",
+          "peer": "a"
+        }
+      }
+    },
+    {
+      "endpoints": {
+        "a": {
+          "node": "r2",
+          "interface": "e1-2",
+          "mac": "aa:c1:ab:31:af:b6",
+          "peer": "z"
+        },
+        "z": {
+          "node": "server1",
+          "interface": "eth2",
+          "mac": "aa:c1:ab:52:fd:5a",
+          "peer": "a"
+        }
+      }
+    }
+  ]
+}
