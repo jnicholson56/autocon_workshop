@@ -1,47 +1,26 @@
-# Reach the lab through ports forwarded to localhost by containerlab (see workshop.clab.yml).
+# Beginner Ansible Workshop Inventory
+# Nodes are reached via the Containerlab management network (172.20.20.0/24).
+#
+#   ansible-inventory --list    # verify connectivity
+#   ansible all -m ping         # test SSH to all nodes
+#
 all:
   children:
     srl:
       hosts:
-        srl-01:
-          ansible_httpapi_port: 8443  # JSON-RPC over HTTPS
-          bgp_peer: 10.1.0.1          # frr-spine
-          uplink: ethernet-1/1
-      vars:
-        ansible_connection: ansible.netcommon.httpapi
-        ansible_network_os: nokia.srlinux.srlinux
-        ansible_user: admin
-        ansible_password: NokiaSrl1!
-        ansible_httpapi_use_ssl: true
-        ansible_httpapi_validate_certs: false
-    frr:
-      hosts:
-        frr-spine:
-          ansible_port: 2212
-          bgp_asn: 65000
-          bgp_peer: 10.1.0.2          # srl-01
-          uplink: eth1
-        frr-leaf:
-          ansible_port: 2213
-          bgp_asn: 65002
-          bgp_peer: 10.1.0.6          # frr-spine
-          uplink: eth1
+        r1:
+          ansible_host: 172.20.20.11
+        r2:
+          ansible_host: 172.20.20.12
       vars:
         ansible_user: admin
-        ansible_ssh_private_key_file: "{{ inventory_dir }}/configs/ssh/lab_key"
-        ansible_become: true
-        ansible_python_interpreter: /usr/bin/python3
-    routers:
-      children:
-        srl:
-        frr:
-    endpoints:
+        ansible_ssh_private_key_file: "{{ inventory_dir }}/ssh/lab_key"
+    servers:
       hosts:
-        client-1:
-          ansible_host: clab-ansible-workshop-client-1  # container name
-        client-2:
-          ansible_host: clab-ansible-workshop-client-2
+        server1:
+          ansible_host: 172.20.20.13
       vars:
-        ansible_connection: community.docker.docker  # docker exec, no SSH on the clients
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: "{{ inventory_dir }}/ssh/lab_key"
   vars:
-    ansible_host: 127.0.0.1
+    ansible_python_interpreter: /usr/bin/python3

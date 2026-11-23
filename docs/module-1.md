@@ -1,209 +1,187 @@
-# Module 1: Ansible Fundamentals & Multi-NOS Inventory
+# Module 1: Foundations & Inventory
+#
+# **Time:** 60 minutes
+#
+# ## Objectives
+#
+# - Understand what Ansible is and why it matters
+# - Write and run your first playbook
+# - Read and modify the inventory
+# - Run ad-hoc commands to query state without writing a playbook
 
-**Time:** 45 minutes
+## 1. What is Ansible?
 
-## Objectives
+Ansible is an open-source automation tool that:
 
-- Verify the lab is running in Containerlab.
-- Read the Ansible inventory and see how each platform gets its own connection method:
-    - **FRR** (`frr-spine`, `frr-leaf`): SSH with a key, running `vtysh` commands.
-    - **Nokia SR Linux** (`srl-01`): JSON-RPC over HTTPS, using the `nokia.srlinux` collection.
-    - **Clients** (`client-1`, `client-2`): `docker exec`, using the `community.docker` collection.
-- Run ad-hoc commands to query state without writing a playbook.
+- **Agentless** — no software to install on target machines, uses SSH
+- **Push-based** — runs from a control machine to remote targets
+- **Idempotent** — running the same playbook twice produces the same result
+- **Declarative** — you describe *what* you want, not *how* to do it
 
-## 1. Prepare your environment
-
-From the repository root:
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-ansible-galaxy collection install -r requirements.yml
-chmod 600 configs/ssh/lab_key
+```text
+┌─────────────┐     SSH      ┌──────────┐
+│  Control    │──────────────▶│  Target   │
+│  Machine    │               │  Host     │
+└─────────────┘               └──────────┘
+   (your laptop)                  (server)
 ```
 
-!!! note
-    `ansible.cfg` points Ansible at `inventory.yml` and installs collections into `./collections`,
-    so you do not need `-i` on every command.
+## 2. Your First Playbook
 
-## 2. Verify the lab
+Create a file called `first_playbook.yml`:
 
-```bash
-sudo containerlab deploy -t workshop.clab.yml   # skip if already running
-sudo containerlab inspect -t workshop.clab.yml
+```yaml title="playbooks/01_first_playbook.yml"
+- name: My first Ansible playbook
+  hosts: servers
+  gather_facts: false
+
+  tasks:
+    - name: Print a greeting
+      ansible.builtin.debug:
+        msg: "Hello from Ansible!"
+
+    - name: Create a directory
+      ansible.builtin.file:
+        path: /tmp/workshop
+        state: directory
+        mode: "0755"
+
+    - name: Create a file
+      ansible.builtin.copy:
+        content: "This file was created by Ansible\n"
+        dest: /tmp/workshop/hello.txt
+        mode: "0644"
 ```
 
-You should see these nodes running:
-
-| Node | Role | Mgmt IP |
-|------|------|---------|
-| `srl-01` | Nokia SR Linux | 172.20.20.11 |
-| `frr-spine` | FRRouting | 172.20.20.12 |
-| `frr-leaf` | FRRouting | 172.20.20.13 |
-| `client-1`, `client-2` | Alpine endpoints | 172.20.20.21 / .22 |
-| `suzieq`, `grafana`, `prometheus`, `gnmic` | Monitoring (used in Modules 3 and 4) | 172.20.20.30 to .33 |
-
-## 3. Read the inventory
+### Run it
 
 ```bash
-cat inventory.yml
+ansible-playbook playbooks/01_first_playbook.yml
+```
+
+You should see output like:
+
+```text
+PLAY [My first Ansible playbook] ***********************************************
+
+TASK [Print a greeting] ********************************************************
+ok: [server1] => {
+    "msg": "Hello from Ansible!"
+}
+
+TASK [Create a directory] ******************************************************
+changed: [server1]
+
+TASK [Create a file] ***********************************************************
+changed: [server1]
+
+PLAY RECAP *********************************************************************
+server1                  : ok=3    changed=2    unreachable=0    failed=0
+```
+
+### Run it again (idempotency)
+
+```bash
+ansible-playbook playbooks/01_first_playbook.yml
+```
+
+Now you should see `changed=0` for the directory and file tasks — nothing changed because the desired state already exists.
+
+## 3. The Inventory
+
+The inventory defines which hosts Ansible can manage. Look at `inventory.yml`:
+
+```yaml title="inventory.yml"
+all:
+  children:
+    srl:
+      hosts:
+        r1:
+          ansible_host: 172.20.20.11
+        r2:
+          ansible_host: 172.20.20.12
+    servers:
+      hosts:
+        server1:
+          ansible_host: 172.20.20.13
+```
+
+### Explore the inventory
+
+```bash
+# List all hosts and groups
+ansible-inventory --list
+
+# Show a graph view
 ansible-inventory --graph
 ```
+
+Output:
 
 ```text
 @all:
   |--@srl:
-  |  |--srl-01
-  |--@frr:
-  |  |--frr-spine
-  |  |--frr-leaf
-  |--@routers:
-  |  |--@srl:
-  |  |--@frr:
-  |--@endpoints:
-  |  |--client-1
-  |  |--client-2
+  |  |--r1
+  |  --r2
+  --@servers:
+     --server1
 ```
 
-`routers` is a parent group that contains both `srl` and `frr`, so one command can reach every
-router regardless of vendor.
+### Exercise: Add a new host
 
-### Key concept: connection plugins
+1. Open `inventory.yml`
+2. Add a new host to the `servers` group:
 
-=== "FRR"
-
-    ```yaml
-    frr:
-      vars:
-        ansible_user: admin
-        ansible_ssh_private_key_file: "{{ inventory_dir }}/configs/ssh/lab_key"
-        ansible_become: true
-    ```
-
-    The default `ssh` connection. Ansible logs in to a Linux shell and runs commands there.
-    FRR is reached through `vtysh`.
-
-=== "Nokia SR Linux"
-
-    ```yaml
-    srl:
-      vars:
-        ansible_connection: ansible.netcommon.httpapi
-        ansible_network_os: nokia.srlinux.srlinux
-        ansible_httpapi_use_ssl: true
-    ```
-
-    A model-driven API. Ansible sends JSON-RPC requests to the router, so you get structured data
-    back instead of text.
-
-=== "Clients"
-
-    ```yaml
-    endpoints:
-      vars:
-        ansible_connection: community.docker.docker
-    ```
-
-    There is no SSH on the clients. Ansible runs `docker exec` in the container.
-
-The routers are reached through `127.0.0.1` on a port that Containerlab forwards
-(`ansible_host` and `ansible_port` in the inventory), so this works the same on a laptop and in a
-Codespace.
-
-## 4. Ad-hoc commands
-
-The syntax is:
-
-```bash
-ansible <host-or-group> -m <module> [-a "<arguments>"]
+```yaml
+    servers:
+      hosts:
+        server1:
+          ansible_host: 172.20.20.13
+        server2:            # <-- add this
+          ansible_host: 172.20.20.14  # <-- and this
 ```
 
-### Exercise 4.1: Reachability
+3. Verify with `ansible-inventory --graph`
+
+## 4. Ad-hoc Commands
+
+Ad-hoc commands let you run single tasks without writing a playbook.
+
+### Exercise 4.1: Check connectivity
 
 ```bash
 ansible all -m ping
 ```
 
-All five hosts should return `pong`.
+All three hosts should return `pong`.
 
-!!! note
-    `ping` here is the Ansible module, not ICMP. It checks that Ansible can connect and run a
-    module on the target.
-
-### Exercise 4.2: Inspect FRR
+### Exercise 4.2: Run a command on one group
 
 ```bash
-ansible frr -m ansible.builtin.command -a "vtysh -c 'show version'"
-ansible frr -m ansible.builtin.command -a "vtysh -c 'show interface brief'"
-ansible frr -m ansible.builtin.command -a "vtysh -c 'show bgp summary'"
+ansible servers -m ansible.builtin.command -a "uptime"
 ```
 
-!!! note
-    You will see `Can't open configuration file /etc/frr/vtysh.conf` in the output. It is harmless.
-
-BGP is already configured in this lab. `frr-spine` (AS 65000) should show two established
-neighbors: `srl-01` and `frr-leaf`.
-
-Ask for JSON instead of text:
+### Exercise 4.3: Run on all hosts
 
 ```bash
-ansible frr-spine -m ansible.builtin.command -a "vtysh -c 'show bgp summary json'"
+ansible all -m ansible.builtin.command -a "whoami"
 ```
 
-### Exercise 4.3: Inspect SR Linux
-
-The `nokia.srlinux.get` module takes a list of YANG paths. Pass the arguments as JSON:
+### Exercise 4.4: Target a single host
 
 ```bash
-ansible srl-01 -m nokia.srlinux.get -a '{"paths":[{"path":"/system/information"}]}'
+ansible r1 -m ansible.builtin.command -a "hostname"
 ```
-
-The result is structured data: software version, boot time, and so on.
-
-```bash
-ansible srl-01 -m nokia.srlinux.get -a '{"paths":[{"path":"/interface[name=mgmt0]/oper-state"}]}'
-ansible srl-01 -m nokia.srlinux.get -a '{"paths":[{"path":"/network-instance[name=default]/protocols/bgp/neighbor[peer-address=10.1.0.1]/session-state"}]}'
-```
-
-You can also run CLI commands through the API:
-
-```bash
-ansible srl-01 -m nokia.srlinux.cli -a '{"commands":["show version"]}'
-```
-
-### Exercise 4.4: Inspect the clients
-
-```bash
-ansible endpoints -m ansible.builtin.command -a "ip -4 addr show eth1"
-```
-
-### Exercise 4.5: Target a whole group
-
-```bash
-ansible routers -m ansible.builtin.command -a uptime
-```
-
-??? warning "Look closely at the `srl-01` answer"
-    `frr-spine` and `frr-leaf` report the uptime of their containers. `srl-01` reports
-    **your own laptop's** uptime. The `httpapi` connection never logs in to the router. Ansible
-    runs `ansible.builtin.command` locally and only uses the router's API for modules written for
-    it, such as `nokia.srlinux.*`.
-
-    Use a module that matches the connection type.
 
 ## 5. Check your understanding
 
-1. Why does the inventory use a different `ansible_connection` for `frr`, `srl` and `endpoints`?
-2. What are the advantages of structured data (SR Linux) over text (FRR CLI)?
-3. Why did `uptime` give a surprising answer for `srl-01`?
-4. What happens if you run `ansible endpoints -m nokia.srlinux.get ...`?
+1. What does "idempotent" mean in Ansible?
+2. Why might you use `gather_facts: false` in a playbook?
+3. How do you run an ad-hoc command against just the `srl` group?
 
 ??? tip "Answers"
-    1. Each platform exposes a different management interface: a Linux shell over SSH, a JSON-RPC
-       API, or a container runtime.
-    2. Structured data can be filtered, compared and asserted on without parsing text.
-    3. With `httpapi`, general-purpose modules run on the Ansible controller, not on the device.
-    4. It fails with a module error: the clients have no SR Linux API, and the module expects the
-       `httpapi` connection.
+    1. Running the same task multiple times produces the same result — no unintended changes on subsequent runs.
+    2. Skipping fact gathering speeds up execution when you don't need system information.
+    3. `ansible srl -m ping`
 
-Next: [Module 2: Declarative BGP & Jinja2](module-2.md).
+Next: [Module 2: Variables, Facts & Loops](module-2.md).

@@ -1,266 +1,216 @@
-# Module 2: Declarative BGP & Jinja2
+# Module 2: Variables, Facts & Loops
+#
+# **Time:** 45 minutes
+#
+# ## Objectives
+#
+# - Understand variable precedence and how to use facts
+# - Use `set_fact` for runtime computation
+# - Write loops with the modern `loop:` syntax
+# - Apply conditionals with `when:`
 
-**Time:** 60 minutes
+## 1. Variables & Facts
 
-## Objectives
+### Gathering facts
 
-- Describe the BGP design once, as data, and render it for two very different platforms:
-    - **FRR** takes CLI text, so its template produces `vtysh` commands.
-    - **SR Linux** takes structured data that follows its YANG model, so its template produces JSON.
-- Write a playbook that runs both platforms in one execution.
-- See idempotency: a second run changes nothing, and a data change touches only what it affects.
-- Verify the result with checks written for each platform.
+Facts are system information collected from targets (OS, IP addresses, CPU, etc.).
 
-## 1. The lab already runs BGP. What is new?
+```yaml title="playbooks/02_variables_facts.yml (excerpt)"
+- name: Show system facts
+  hosts: servers
+  gather_facts: true
 
-The lab starts with eBGP sessions up and each router advertising its loopback. The playbook you
-run in this module takes over that configuration and adds one thing to every router: a
-**service loopback** in `10.20.0.0/24`, advertised into BGP.
-
-```text
-AS 65001            AS 65000             AS 65002
-srl-01 ---------- frr-spine ---------- frr-leaf
-10.1.0.2   10.1.0.1  10.1.0.6   10.1.0.5
-```
-
-| Router | AS | Loopback | New service loopback |
-|--------|----|----------|----------------------|
-| `srl-01` | 65001 | 10.0.0.1/32 | 10.20.0.1/32 |
-| `frr-spine` | 65000 | 10.0.0.2/32 | 10.20.0.2/32 |
-| `frr-leaf` | 65002 | 10.0.0.3/32 | 10.20.0.3/32 |
-
-## 2. The data model
-
-Each router has a file in `host_vars/` with the same structure. Ansible loads it automatically
-for the host with the matching name.
-
-```yaml title="host_vars/frr-leaf.yml"
-bgp:
-  asn: 65002
-  router_id: 10.0.0.3
-  service_loopback: 10.20.0.3/32     # new in Module 2
-  advertise:                         # prefixes already advertised by the lab
-    - 10.0.0.3/32
-    - 172.16.1.0/24
-  neighbors:
-    - { address: 10.1.0.6, asn: 65000, description: frr-spine }
-```
-
-Compare it with `host_vars/srl-01.yml` and `host_vars/frr-spine.yml`. The structure is identical,
-whatever the vendor. That is what lets one set of tooling serve every platform.
-
-## 3. The templates
-
-Both templates read the `bgp` variable. They differ only in the output format.
-
-=== "FRR (text)"
-
-    ```jinja title="playbooks/templates/frr_bgp.j2"
-    interface lo
-     ip address {{ bgp.service_loopback }}
-    exit
-    !
-    router bgp {{ bgp.asn }}
-     bgp router-id {{ bgp.router_id }}
-    {% for n in bgp.neighbors %}
-     neighbor {{ n.address }} remote-as {{ n.asn }}
-     neighbor {{ n.address }} description {{ n.description }}
-    {% endfor %}
-     !
-     address-family ipv4 unicast
-    {% for prefix in bgp.advertise + [bgp.service_loopback] %}
-      network {{ prefix }}
-    {% endfor %}
-    {% for n in bgp.neighbors %}
-      neighbor {{ n.address }} activate
-    {% endfor %}
-     exit-address-family
-    exit
-    ```
-
-=== "SR Linux (JSON)"
-
-    ```jinja title="playbooks/templates/srl_bgp.json.j2"
-    {
-      "interface": [
-        {
-          "name": "lo0",
-          "admin-state": "enable",
-          "subinterface": [
-            {
-              "index": 0,
-              "admin-state": "enable",
-              "ipv4": {
-                "admin-state": "enable",
-                "address": [ { "ip-prefix": "{{ bgp.service_loopback }}" } ]
-              }
-            }
-          ]
-        }
-      ],
-      "network-instance": [
-        {
-          "name": "default",
-          "interface": [ { "name": "lo0.0" } ],
-          "protocols": {
-            "bgp": {
-              "autonomous-system": {{ bgp.asn }},
-              "router-id": "{{ bgp.router_id }}",
-              "neighbor": [
-    {% for n in bgp.neighbors %}
-                {
-                  "peer-address": "{{ n.address }}",
-                  "peer-as": {{ n.asn }},
-                  "peer-group": "ebgp",
-                  "description": "{{ n.description }}"
-                }{{ "," if not loop.last }}
-    {% endfor %}
-              ]
-            }
-          }
-        }
-      ],
-      "routing-policy": {
-        "prefix-set": [
-          {
-            "name": "default_bgp_advertise",
-            "prefix": [
-    {% for prefix in bgp.advertise + [bgp.service_loopback] %}
-              { "ip-prefix": "{{ prefix }}", "mask-length-range": "exact" }{{ "," if not loop.last }}
-    {% endfor %}
-            ]
-          }
-        ]
-      }
-    }
-    ```
-
-On SR Linux, a prefix is only advertised if it is in the `default_bgp_advertise` prefix set, so
-the template manages that set too.
-
-## 4. The playbook
-
-```yaml title="playbooks/deploy_bgp.yml"
-- name: Configure the FRR routers (text template)
-  hosts: frr
-  gather_facts: false
   tasks:
-    - name: Render the vtysh configuration on the router
-      ansible.builtin.template:
-        src: frr_bgp.j2
-        dest: /tmp/workshop-bgp.conf
-        mode: "0644"
-      notify: Apply the FRR configuration
+    - name: Display the OS family
+      ansible.builtin.debug:
+        msg: "This host runs on {{ ansible_os_family }}"
 
-  handlers:
-    - name: Apply the FRR configuration
-      ansible.builtin.command: vtysh -f /tmp/workshop-bgp.conf
-      changed_when: true
+    - name: Display the hostname
+      ansible.builtin.debug:
+        msg: "Hostname is {{ ansible_hostname }}"
 
-- name: Configure SR Linux (structured JSON)
-  hosts: srl
+    - name: Display total memory
+      ansible.builtin.debug:
+        msg: "Total memory: {{ ansible_memtotal_mb }} MB"
+```
+
+Run it:
+
+```bash
+ansible-playbook playbooks/02_variables_facts.yml
+```
+
+### Variable precedence
+
+Ansible loads variables from many sources. The order (low to high):
+
+1. Role defaults
+2. Inventory file variables
+3. Host vars
+4. Playbook vars
+5. `set_fact` (runtime)
+6. Extra vars (`-e`) — highest priority
+
+### Exercise: Override a variable
+
+1. Add a variable in `inventory.yml` under the `servers` group:
+
+```yaml
+    servers:
+      hosts:
+        server1:
+          ansible_host: 172.20.20.13
+      vars:
+        welcome_message: "Welcome to the workshop!"
+```
+
+2. Use it in a playbook:
+
+```yaml title="playbooks/02_variables_facts.yml (excerpt)"
+- name: Use inventory variable
+  hosts: servers
   gather_facts: false
+
   tasks:
-    - name: Apply the rendered JSON to the candidate datastore and commit
-      nokia.srlinux.config:
-        update:
-          - path: "/"
-            value: "{{ lookup('ansible.builtin.template', 'srl_bgp.json.j2') }}"
+    - name: Show the welcome message
+      ansible.builtin.debug:
+        msg: "{{ welcome_message }}"
 ```
 
-Two plays, two approaches:
-
-- **FRR:** the template is rendered into a file on the router. Ansible only reports a change when
-  the file content changes, and only then does the **handler** apply it with `vtysh -f`.
-- **SR Linux:** the module sends the data to the router, which compares it with its own
-  configuration. It reports a change only if something differs.
-
-## 5. Run it
-
-Preview the FRR change first. `--check` changes nothing and `--diff` shows what would be written:
+3. Override it on the command line:
 
 ```bash
-ansible-playbook playbooks/deploy_bgp.yml --check --diff -l frr
+ansible-playbook playbooks/02_variables_facts.yml -e "welcome_message=Hello from CLI!"
 ```
 
-Now deploy to all three routers:
+### Runtime variables with `set_fact`
+
+```yaml title="playbooks/02_variables_facts.yml (excerpt)"
+- name: Compute a value at runtime
+  hosts: servers
+  gather_facts: true
+
+  tasks:
+    - name: Set a fact based on system info
+      ansible.builtin.set_fact:
+        is_ubuntu: "{{ 'Ubuntu' in ansible_distribution }}"
+
+    - name: Show the computed fact
+      ansible.builtin.debug:
+        var: is_ubuntu
+```
+
+## 2. Loops
+
+### The modern `loop:` syntax
+
+```yaml title="playbooks/03_conditionals_loops.yml (excerpt)"
+- name: Install packages
+  hosts: servers
+  gather_facts: false
+
+  tasks:
+    - name: Install a list of packages
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - curl
+        - wget
+        - vim
+```
+
+Run it:
 
 ```bash
-ansible-playbook playbooks/deploy_bgp.yml --diff
+ansible-playbook playbooks/03_conditionals_loops.yml --check
 ```
 
-You should see `changed` on all three routers. On SR Linux the diff lists the new loopback and
-its prefix-set entry, and nothing else, because everything else in the data already matched.
+`--check` shows what would change without making changes.
 
-### Idempotency
+### Looping over dictionaries
 
-Run the exact same command again:
+```yaml title="playbooks/03_conditionals_loops.yml (excerpt)"
+- name: Create users
+  hosts: servers
+  gather_facts: false
 
-```bash
-ansible-playbook playbooks/deploy_bgp.yml
+  tasks:
+    - name: Create system users
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        state: "{{ item.state | default('present') }}"
+      loop:
+        - { name: workshop, state: present }
+        - { name: backup, state: absent }
 ```
 
-```text
-frr-leaf  : ok=1  changed=0
-frr-spine : ok=1  changed=0
-srl-01    : ok=1  changed=0
+## 3. Conditionals
+
+### Using `when:`
+
+```yaml title="playbooks/03_conditionals_loops.yml (excerpt)"
+- name: Conditional task
+  hosts: servers
+  gather_facts: true
+
+  tasks:
+    - name: Show OS-specific message
+      ansible.builtin.debug:
+        msg: "This is a Debian-based system"
+      when: ansible_os_family == "Debian"
+
+    - name: Show hostname on Ubuntu only
+      ansible.builtin.debug:
+        msg: "Ubuntu host: {{ ansible_hostname }}"
+      when:
+        - ansible_os_family == "Debian"
+        - ansible_distribution == "Ubuntu"
 ```
 
-Nothing changed, and the handler did not run. Playbooks describe the **desired state**, not a
-sequence of commands, so running them again is safe.
+### Exercise: Combine loops and conditionals
 
-## 6. Verify
+Write a playbook that:
 
-```bash
-ansible-playbook playbooks/verify_bgp.yml
+1. Loops over a list of packages
+2. Installs only those that are not already installed (use `when:` with `ansible_facts`)
+3. Prints which packages were skipped
+
+```yaml title="playbooks/03_conditionals_loops.yml"
+- name: Conditional package installation
+  hosts: servers
+  gather_facts: true
+
+  vars:
+    packages_to_check:
+      - nginx
+      - python3
+      - git
+
+  tasks:
+    - name: Check and install packages conditionally
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages_to_check }}"
+      when: not (item in ansible_pkg_mgr_facts.installed_packages | default([]))
+
+    - name: Report skipped packages
+      ansible.builtin.debug:
+        msg: "{{ item }} is already installed"
+      loop: "{{ packages_to_check }}"
+      when: item in ansible_pkg_mgr_facts.installed_packages | default([])
 ```
 
-This playbook checks that every neighbor in `host_vars/` is established and that every router has
-every service loopback. Notice that each platform is checked differently:
+## 4. Check your understanding
 
-- **FRR:** run `vtysh -c 'show bgp summary json'` and parse the text output.
-- **SR Linux:** ask for `.../neighbor[peer-address=X]/session-state` and get one value back.
-
-You can also look at the result yourself:
-
-```bash
-ansible frr-leaf -m ansible.builtin.command -a "vtysh -c 'show bgp ipv4 unicast'"
-```
-
-## 7. Exercise: change the data, not the commands
-
-1. In `host_vars/frr-leaf.yml`, change the neighbor's description from `frr-spine` to
-   `spine-uplink`.
-2. Run `ansible-playbook playbooks/deploy_bgp.yml --diff`.
-3. Only `frr-leaf` changes, and the diff shows the single changed line.
-4. Check it: `ansible frr-leaf -m ansible.builtin.command -a "vtysh -c 'show bgp summary'"`.
-5. Change it back and run the playbook again.
-
-!!! warning "Playbooks add and update. They do not remove."
-    If you delete a neighbor from `host_vars/`, the playbook stops managing it, but it stays on the
-    router. Removing configuration needs an explicit `no neighbor ...` on FRR or a `delete` on
-    SR Linux. Real automation often handles removals the same way.
-
-!!! note
-    The changes live only in the routers' running configuration. Redeploy the lab to start clean:
-    `sudo containerlab redeploy -t workshop.clab.yml`.
-
-## 8. Check your understanding
-
-1. Why do both templates read the same `bgp` variable?
-2. On FRR, what decides whether the handler runs? On SR Linux, what decides whether the task
-   reports `changed`?
-3. What would you change to add a fourth router?
-4. Why does `verify_bgp.yml` need different tasks for FRR and SR Linux?
+1. What is the difference between `set_fact` and a variable defined in `inventory.yml`?
+2. How do you loop over a list of dictionaries?
+3. Can you combine multiple conditions with `when:`? How?
 
 ??? tip "Answers"
-    1. One source of truth: a change is made once and both platforms get it, so the routers cannot
-       drift apart.
-    2. FRR: whether the rendered file differs from the one on the router. SR Linux: whether the
-       data differs from the router's configuration.
-    3. Add a `host_vars/<name>.yml` file and an inventory entry. The templates and playbooks stay
-       the same.
-    4. The platforms return different things: text that has to be parsed, versus structured data.
-       Module 3 removes that difference.
+    1. `set_fact` sets a variable at runtime during playbook execution; inventory variables are loaded before the play starts. `set_fact` takes precedence over inventory vars.
+    2. Use `loop:` with a list of dictionaries, then access keys with `{{ item.key }}`.
+    3. Yes — list multiple conditions under `when:` as a YAML list; they are ANDed together.
 
-Next: [Module 3: SuzieQ State Verification](module-3.md).
+Next: [Module 3: Templates & Roles](module-3.md).
