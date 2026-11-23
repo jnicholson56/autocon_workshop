@@ -1,39 +1,47 @@
-# Ansible Network Automation Workshop
+# Beginner Ansible Workshop
 
-A 4-hour, hands-on lab that automates a small multi-NOS network built with
-[Containerlab](https://containerlab.dev), then verifies and monitors it with SuzieQ,
-Prometheus, gnmic and Grafana.
+A 4-hour, hands-on introduction to Ansible fundamentals — playbooks, inventory, variables, templates, roles, and error handling. Built on a simple Containerlab topology with 2 Nokia SR Linux routers and 1 Ubuntu server.
 
 ## Lab topology
 
-| Node | Role | Image | Mgmt IP |
-|------|------|-------|---------|
-| `srl-01` | Nokia SR Linux | `ghcr.io/nokia/srlinux` | 172.20.20.11 |
-| `frr-spine` | FRRouting | `localhost/frr-mon` | 172.20.20.12 |
-| `frr-leaf` | FRRouting | `localhost/frr-mon` | 172.20.20.13 |
-| `client-1`, `client-2` | Traffic generators (iperf3) | `python:3.13-alpine` | 172.20.20.21 / .22 |
-| `suzieq` | State verification | `localhost/suzieq` | 172.20.20.30 |
+```
+              ┌────────┐
+              │   r1   │ (Nokia SR Linux)
+              │ 172.20.20.11 ──┐
+              └──┬─────┬──────┘
+                 │     │
+           e1-1 ─┘     └─ e1-2
+                 │       │
+          ┌──────┴──┐  ┌─┴──────────┐
+          │   r2    │  │  server1   │ (Ubuntu)
+          │172.20.20.12│ │172.20.20.13
+          └───────────┘  └──────────┘
+```
 
-The topology is defined in `workshop.clab.yml` and the Ansible inventory in `inventory.yml`.
+| Node | Role | Image | Mgmt IP | Ansible Group |
+|------|------|-------|---------|---------------|
+| `r1` | Nokia SR Linux | `ghcr.io/nokia/srlinux` | 172.20.20.11 | srl |
+| `r2` | Nokia SR Linux | `ghcr.io/nokia/srlinux` | 172.20.20.12 | srl |
+| `server1` | Ubuntu server | `ghcr.io/hellt/ubuntu-netlab` | 172.20.20.13 | servers |
+
+The topology is defined in `workshop-beginner.clab.yml` and the Ansible inventory in `inventory.yml`.
 
 ## Prerequisites
 
 - Docker (Docker Desktop, OrbStack, or WSL2) **or** a GitHub Codespace
-- Containerlab
+- Containerlab — install from [GitHub releases](https://github.com/srl-labs/containerlab/releases)
 - Python 3 with the packages in `requirements.txt`
-- Ansible collections from `requirements.yml`
 
 ```bash
 pip install -r requirements.txt
-ansible-galaxy collection install -r requirements.yml
 ```
 
 !!! note
-    Pure container NOS images keep the whole lab within roughly 4 GB of RAM.
+    Keep Docker memory allocation at 4 GB or higher so SR Linux containers start reliably.
 
 ## Agenda
 
 1. [Foundations & Inventory](module-1.md)
-2. [Declarative BGP & Jinja2](module-2.md)
-3. [SuzieQ State Verification](module-3.md)
-4. [Observability & Telemetry](module-4.md)
+2. [Variables, Facts & Loops](module-2.md)
+3. [Templates & Roles](module-3.md)
+4. [Handlers, Tags & Error Handling](module-4.md)
