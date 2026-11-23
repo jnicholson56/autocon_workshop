@@ -1,5 +1,5 @@
-site_name: Ansible Network Automation Workshop
-site_description: 4-Hour Hands-on Multi-NOS Lab with Containerlab, SuzieQ, and Prometheus
+site_name: Beginner Ansible Workshop
+site_description: 4-Hour Hands-on Introduction to Ansible with Containerlab
 site_author: Workshop Organizer
 site_url: https://jnicholson56.github.io/autocon_workshop/
 repo_url: https://github.com/jnicholson56/autocon_workshop
