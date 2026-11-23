@@ -1,0 +1,7 @@
+# Tasks file for import/include demonstration
+# This file is included by 06_import_tasks.yml to show the difference
+# between static import (parse time) and dynamic include (runtime).
+
+- name: Task from included file
+  ansible.builtin.debug:
+    msg: "This is a setup step — my_var is '{{ my_var }}'"

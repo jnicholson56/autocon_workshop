@@ -13,7 +13,7 @@
 
 Handlers are tasks that run only when notified by other tasks.
 
-```yaml title="playbooks/06_handlers_tags.yml (excerpt)"
+```yaml title="playbooks/07_handlers_tags.yml (excerpt)"
 - name: Configure services with handlers
   hosts: servers
   gather_facts: false
@@ -50,7 +50,7 @@ Handlers are tasks that run only when notified by other tasks.
 
 Tags let you run only specific parts of a playbook.
 
-```yaml title="playbooks/06_handlers_tags.yml (excerpt)"
+```yaml title="playbooks/07_handlers_tags.yml (excerpt)"
 - name: Deploy web server with tags
   hosts: servers
   gather_facts: false
@@ -88,16 +88,16 @@ Tags let you run only specific parts of a playbook.
 
 ```bash
 # Run only install tasks
-ansible-playbook playbooks/06_handlers_tags.yml --tags install
+ansible-playbook playbooks/07_handlers_tags.yml --tags install
 
 # Run only deploy tasks (skips install)
-ansible-playbook playbooks/06_handlers_tags.yml --tags deploy
+ansible-playbook playbooks/07_handlers_tags.yml --tags deploy
 
 # Skip content tasks
-ansible-playbook playbooks/06_handlers_tags.yml --skip-tags content
+ansible-playbook playbooks/07_handlers_tags.yml --skip-tags content
 
 # Run everything
-ansible-playbook playbooks/06_handlers_tags.yml
+ansible-playbook playbooks/07_handlers_tags.yml
 ```
 
 ## 3. Error Handling
@@ -127,7 +127,7 @@ Define custom failure conditions:
 
 Like try/catch/finally:
 
-```yaml title="playbooks/07_error_handling.yml (excerpt)"
+```yaml title="playbooks/08_error_handling.yml (excerpt)"
 - name: Graceful error handling
   hosts: servers
   gather_facts: false
@@ -165,9 +165,9 @@ Like try/catch/finally:
 
 ### Exercise: Write an error-handling playbook
 
-Create `playbooks/07_error_handling.yml`:
+Create `playbooks/08_error_handling.yml`:
 
-```yaml title="playbooks/07_error_handling.yml"
+```yaml title="playbooks/08_error_handling.yml"
 - name: Error handling demonstration
   hosts: servers
   gather_facts: false
@@ -201,7 +201,7 @@ Create `playbooks/07_error_handling.yml`:
 Run it:
 
 ```bash
-ansible-playbook playbooks/07_error_handling.yml
+ansible-playbook playbooks/08_error_handling.yml
 ```
 
 You should see the rescue block execute because writing to `/root` requires root privileges.

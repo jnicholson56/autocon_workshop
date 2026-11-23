@@ -1,0 +1,31 @@
+# Module 3: Import vs Include Tasks Exercise
+#
+# Run this after reading module-3.md to see the difference between
+# static import_tasks and dynamic include_tasks.
+
+- name: Import vs Include demonstration
+  hosts: servers
+  gather_facts: false
+
+  tasks:
+    # --- Static import (won't see my_var) ---
+    - name: Define my_var at runtime
+      ansible.builtin.set_fact:
+        my_var: "hello from set_fact"
+
+    - name: Print my_var before import
+      ansible.builtin.debug:
+        msg: "Before import, my_var is '{{ my_var }}'"
+
+    - name: Static import (resolved at parse time — my_var not available)
+      ansible.builtin.import_tasks:
+        file: tasks_setup.yml
+
+    # --- Dynamic include (will see my_var) ---
+    - name: Print my_var before include
+      ansible.builtin.debug:
+        msg: "Before include, my_var is '{{ my_var }}'"
+
+    - name: Dynamic include (resolved at runtime — my_var is available)
+      ansible.builtin.include_tasks:
+        file: tasks_setup.yml

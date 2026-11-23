@@ -8,6 +8,7 @@
 - Use filters to transform data
 - Organize playbooks into roles
 - Understand when to use a role vs. a flat playbook
+- Import tasks statically vs. include them dynamically
 
 ## 1. Templates with Jinja2
 
@@ -284,7 +285,123 @@ Use a role when:
 
 Keep it simple: a flat playbook is fine for one-off tasks.
 
-## 3. Check your understanding
+## 3. Import vs Include Tasks
+
+Sometimes you want to split your task list across multiple files. Ansible gives you two ways to do this — and they behave very differently.
+
+### `import_tasks` — Static (parse time)
+
+`import_tasks` copies the tasks into your playbook **before it even runs**. The file is read at parse time, so:
+
+- Imported tasks appear in the playbook as if they were written inline
+- You **cannot** use variables set by previous tasks (they don't exist yet at parse time)
+- The file path must be a literal string — no variable interpolation
+- All tasks are registered as one continuous block
+
+```yaml title="playbooks/06_import_tasks.yml (import_tasks example)"
+- name: Static import
+  hosts: servers
+  gather_facts: false
+
+  tasks:
+    - name: Print a variable
+      ansible.builtin.debug:
+        msg: "Before import, my_var is {{ my_var }}"
+
+    - name: Import tasks (static — happens at parse time)
+      ansible.builtin.import_tasks:
+        file: tasks_setup.yml
+```
+
+If `my_var` is not defined before the import, the imported tasks **cannot** use it — even if you define it between the import and where it's used. That's because the entire file was pulled in before anything ran.
+
+### `include_tasks` — Dynamic (runtime)
+
+`include_tasks` loads the file **when Ansible reaches that line** during execution. This means:
+
+- Included tasks see all variables set by previous tasks
+- You can use a variable for the file path (e.g., `include_tasks: "{{ my_file }}"`)
+- Each `include_tasks` call is independent — you can include different files conditionally
+- The included tasks run in place, preserving task numbering and handlers
+
+```yaml title="playbooks/06_import_tasks.yml (include_tasks example)"
+- name: Dynamic include
+  hosts: servers
+  gather_facts: false
+
+  tasks:
+    - name: Set a variable at runtime
+      ansible.builtin.set_fact:
+        setup_type: production
+
+    - name: Include tasks (dynamic — happens at runtime)
+      ansible.builtin.include_tasks:
+        file: "setup_{{ setup_type }}.yml"
+```
+
+Here, `setup_type` is set by a previous task, and the included file can use it freely.
+
+### Side-by-side comparison
+
+| | `import_tasks` | `include_tasks` |
+|---|---|---|
+| **When loaded** | Parse time (before play starts) | Runtime (when reached) |
+| **Can use task-set variables?** | No | Yes |
+| **Variable file path?** | No (literal only) | Yes |
+| **Good for** | Fixed task groups, shared utility tasks | Conditional logic, dynamic file selection |
+| **Handlers notified** | Yes, but only once per play | Yes, independently per include |
+
+### When to use which
+
+- Use `import_tasks` when you have a **fixed** set of tasks that don't depend on runtime state — e.g., a standard "install prerequisites" block.
+- Use `include_tasks` when you need **conditional** logic — e.g., include different setup files based on OS, or loop over a list of config files to process.
+
+### Exercise: See the difference yourself
+
+Create these three files:
+
+**`playbooks/tasks_setup.yml`:**
+```yaml
+- name: Setup task from imported file
+  ansible.builtin.debug:
+    msg: "This is a setup step — my_var is '{{ my_var }}'"
+```
+
+**`playbooks/06_import_tasks.yml`:**
+```yaml
+- name: Import vs Include demonstration
+  hosts: servers
+  gather_facts: false
+
+  tasks:
+    # --- Static import (won't see my_var) ---
+    - name: Define my_var
+      ansible.builtin.set_fact:
+        my_var: "hello from set_fact"
+
+    - name: Try static import (my_var not available)
+      ansible.builtin.import_tasks:
+        file: tasks_setup.yml
+      # This will show my_var as empty because import_tasks
+      # was resolved at parse time, before set_fact ran.
+
+    # --- Dynamic include (will see my_var) ---
+    - name: Include tasks dynamically (my_var is available)
+      ansible.builtin.include_tasks:
+        file: tasks_setup.yml
+      # This will show my_var = "hello from set_fact"
+      # because include_tasks runs at runtime.
+```
+
+Run it:
+
+```bash
+ansible-playbook playbooks/06_import_tasks.yml
+```
+
+You'll see the first debug (from `import_tasks`) shows an empty `my_var`, while the second debug (from `include_tasks`) shows the value set by `set_fact`.
+
+## 4. Check your understanding
 
 1. What is the difference between `copy` and `template` modules?
 2. Why are default variables in a role useful?
