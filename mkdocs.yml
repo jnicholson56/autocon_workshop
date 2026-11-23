@@ -49,6 +49,6 @@ markdown_extensions:
 nav:
   - Overview & Topology: index.md
   - "Module 1: Foundations & Inventory": module-1.md
-  - "Module 2: Declarative BGP & Jinja2": module-2.md
-  - "Module 3: SuzieQ State Verification": module-3.md
-  - "Module 4: Observability & Telemetry": module-4.md
+  - "Module 2: Variables, Facts & Loops": module-2.md
+  - "Module 3: Templates & Roles": module-3.md
+  - "Module 4: Handlers, Tags & Error Handling": module-4.md
