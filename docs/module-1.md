@@ -26,6 +26,9 @@ Ansible is an open-source automation tool that:
    (your laptop)                  (server)
 ```
 
+??? info "For deeper exploration"
+    - [Getting Started Guide](https://docs.ansible.com/ansible/latest/getting_started/index.html) — the official beginner's journey through Ansible fundamentals
+
 ## 2. Your First Playbook
 
 Create a file called `first_playbook.yml`:
@@ -87,6 +90,9 @@ ansible-playbook playbooks/01_first_playbook.yml
 
 Now you should see `changed=0` for the directory and file tasks — nothing changed because the desired state already exists.
 
+??? info "For deeper exploration"
+    - [Playbooks introduction](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_intro.html) — what playbooks are and how they're structured
+
 ## 3. The Inventory
 
 The inventory defines which hosts Ansible can manage. Look at `inventory.yml`:
@@ -143,6 +149,10 @@ Output:
 
 3. Verify with `ansible-inventory --graph`
 
+??? info "For deeper exploration"
+    - [Inventory documentation](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html) — dynamic inventories, groups, variables, patterns
+    - [Ansible CLI reference](https://docs.ansible.com/projects/ansible/latest/command_guide/index.html) — full list of command-line tools and options
+
 ## 4. Ad-hoc Commands
 
 Ad-hoc commands let you run single tasks without writing a playbook.
@@ -172,6 +182,11 @@ ansible all -m ansible.builtin.command -a "whoami"
 ```bash
 ansible r1 -m ansible.builtin.command -a "hostname"
 ```
+
+??? info "For deeper exploration"
+    - [Ad-hoc commands guide](https://docs.ansible.com/projects/ansible/latest/command_guide/intro_adhoc.html) — ad-hoc commands introduction
+    - [Ansible ping module](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/ping_module.html) — how connectivity checking works
+    - [Module index](https://docs.ansible.com/ansible/latest/collections/index.html) — browse all available modules
 
 ## 5. Check your understanding
 

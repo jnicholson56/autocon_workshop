@@ -40,6 +40,10 @@ Run it:
 ansible-playbook playbooks/02_variables_facts.yml
 ```
 
+??? info "For deeper exploration"
+    - [Facts documentation](https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_vars_facts.html) — how facts are collected and what's available
+    - [Debug module](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/debug_module.html) — printing variables and debugging playbooks
+
 ### Variable precedence
 
 Ansible loads variables from many sources. The order (low to high):
@@ -50,8 +54,6 @@ Ansible loads variables from many sources. The order (low to high):
 4. Playbook vars
 5. `set_fact` (runtime)
 6. Extra vars (`-e`) — highest priority
-
-### Exercise: Override a variable
 
 1. Add a variable in `inventory.yml` under the `servers` group:
 
@@ -100,6 +102,11 @@ ansible-playbook playbooks/02_variables_facts.yml -e "welcome_message=Hello from
         var: is_ubuntu
 ```
 
+??? info "For deeper exploration"
+    - [set_fact documentation](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/set_fact_module.html) — runtime variable computation
+    - [Variable precedence guide](https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable) — complete precedence table and troubleshooting
+    - [Extra vars](https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_variables.html#defining-variables-at-runtime) — passing variables via `-e`
+
 ## 2. Loops
 
 ### The modern `loop:` syntax
@@ -128,6 +135,10 @@ ansible-playbook playbooks/03_conditionals_loops.yml --check
 
 `--check` shows what would change without making changes.
 
+??? info "For deeper exploration"
+    - [Loops documentation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html) — `loop`, `with_items`, `with_list`, and other iteration methods
+    - [Lookup plugins](https://docs.ansible.com/projects/ansible/latest/plugins/lookup.html) — loading data from files, databases, and external sources
+
 ### Looping over dictionaries
 
 ```yaml title="playbooks/03_conditionals_loops.yml (excerpt)"
@@ -144,6 +155,10 @@ ansible-playbook playbooks/03_conditionals_loops.yml --check
         - { name: workshop, state: present }
         - { name: backup, state: absent }
 ```
+
+??? info "For deeper exploration"
+    - [Looping over complex data](https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_loops.html#nested-loops) — nested loops, dictionary iteration
+    - [Loop action plugin](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/include_tasks_module.html#ex-2-dynamically-include-tasks-based-on-a-loop) — using `loop` with `include_tasks`
 
 ## 3. Conditionals
 
@@ -201,6 +216,10 @@ Write a playbook that:
       loop: "{{ packages_to_check }}"
       when: item in ansible_pkg_mgr_facts.installed_packages | default([])
 ```
+
+??? info "For deeper exploration"
+    - [Conditionals documentation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_conditionals.html) — `when`, `failed_when`, `changed_when`
+    - [Combining loops and conditionals](https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_conditionals.html#using-conditionals-in-loops) — best practices for using `when` with `loop`
 
 ## 4. Check your understanding
 

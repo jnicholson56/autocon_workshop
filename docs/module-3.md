@@ -63,6 +63,11 @@ Filters transform variable values. Common ones:
 | `bool` | `{{ "yes" \| bool }}` | true |
 | `ternary` | `{{ enabled \| ternary('on', 'off') }}` | 'on' or 'off' |
 
+??? info "For deeper exploration"
+    - [Template module documentation](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html) — all template options and parameters
+    - [Jinja2 documentation](https://jinja.palletsprojects.com/en/latest/templates/) — the full Jinja2 template language reference
+    - [Available filters](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_filters.html) — complete list of built-in Jinja2 filters
+
 ### Exercise: Template a simple web page
 
 1. Create `playbooks/templates/index.html.j2`:
@@ -276,6 +281,11 @@ cp playbooks/templates/index.html.j2 roles/web_server/templates/
 ansible-playbook playbooks/05_roles.yml --check
 ```
 
+??? info "For deeper exploration"
+    - [Roles documentation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html) — role structure, defaults, and variable scope
+    - [Role development guide](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#writing-a-role) — best practices for building reusable roles
+    - [Ansible Galaxy](https://docs.ansible.com/ansible/latest/galaxy/user.html) — sharing and installing roles from the community
+
 ### When to use a role
 
 Use a role when:
@@ -400,6 +410,11 @@ ansible-playbook playbooks/06_import_tasks.yml
 ```
 
 You'll see the first debug (from `import_tasks`) shows an empty `my_var`, while the second debug (from `include_tasks`) shows the value set by `set_fact`.
+
+??? info "For deeper exploration"
+    - [Import vs Include documentation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_includes.html) — detailed comparison of `import_*` vs `include_*` directives
+    - [Import playbook](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_includes.html#import-playbook) — importing entire playbooks (not just tasks)
+    - [Include tasks with loops](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/include_tasks_module.html#ex-2-dynamically-include-tasks-based-on-a-loop) — looping over files with `include_tasks`
 
 ## 4. Check your understanding
 

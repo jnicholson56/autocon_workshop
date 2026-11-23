@@ -46,6 +46,10 @@ Handlers are tasks that run only when notified by other tasks.
 - Handlers only run if a task reports `changed`
 - Use `--handlers` to see which handlers would run
 
+??? info "For deeper exploration"
+    - [Handlers documentation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html) — handler execution order, flushing behavior
+    - [Notify handlers](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html#notify-handler-basics) — how `notify` triggers handlers and when they run
+
 ## 2. Tags
 
 Tags let you run only specific parts of a playbook.
@@ -99,6 +103,10 @@ ansible-playbook playbooks/07_handlers_tags.yml --skip-tags content
 # Run everything
 ansible-playbook playbooks/07_handlers_tags.yml
 ```
+
+??? info "For deeper exploration"
+    - [Tags documentation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_tags.html) — tagging tasks, plays, and roles; `--tags`, `--skip-tags`, `--list-tags`
+    - [Tag best practices](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_tags.html#tags) — organizing tags for CI/CD and selective runs
 
 ## 3. Error Handling
 
@@ -205,6 +213,10 @@ ansible-playbook playbooks/08_error_handling.yml
 ```
 
 You should see the rescue block execute because writing to `/root` requires root privileges.
+
+??? info "For deeper exploration"
+    - [Error handling documentation](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_error_handling.html) — `block`, `rescue`, `always`, `ignore_errors`, `failed_when`
+    - [Handling errors in loops](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_error_handling.html#errors-in-loop-tasks) — error handling when iterating over items
 
 ## 4. Lab: Deploy a Web Stack (30 minutes)
 
@@ -396,6 +408,12 @@ jobs:
       - name: Lint playbooks
         run: ansible-lint playbooks/
 ```
+
+??? info "For deeper exploration"
+    - [Ansible Vault](https://docs.ansible.com/ansible/latest/user_guide/vault.html) — encrypting variables, files, and entire playbooks
+    - [Ansible Galaxy](https://docs.ansible.com/ansible/latest/galaxy/user.html) — publishing and installing roles/collections
+    - [Ansible Lint](https://ansible-lint.readthedocs.io/) — static analysis for playbooks and roles
+    - [Ansible in CI/CD](https://docs.ansible.com/ansible/latest/installation_guide/intro_ci_cd.html) — integrating Ansible into continuous integration pipelines
 
 ## 6. Check your understanding
 
